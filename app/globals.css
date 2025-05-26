@@ -1,26 +1,176 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-primary-700: #1b7ced;
+  --color-primary-800: #0358ba;
+  --color-primary-900: #5151e4;
+  --color-primary-950: #311f71;
+
+  --color-accent-50: #48bb78;
+  --color-accent-100: #94e7a6;
+
+  --color-grey-50: #d9d9d9;
+  --color-grey-100: #f6f6f6;
+  --color-grey-200: #e4e4e4;
+
+  --color-text-50: #656565;
+  --color-text-100: #484848;
+  --color-text-200: #363636;
+  --color-text-200: #414141;
+
+  --color-timeline-50: '#eff6ff',
+  --color-timeline-100: '#dbeafe',
+  --color-timeline-200: '#bfdbfe',
+  --color-timeline-300: '#93c5fd',
+  --color-timeline-400: '#60a5fa',
+  --color-timeline-500: '#3b82f6',
+  --color-timeline-600: '#2563eb',
+  --color-timeline-700: '#1d4ed8',
+  --color-timeline-800: '#1e40af',
+  --color-timeline-900: '#1e3a8a',
+
+  /* Fonts */
+  --font-body: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-heading: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  body {
+    font-family: var(--font-body);
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+html {
+  scroll-behavior: smooth;
+}
+
+@layer utilities {
+  .custom-gradient {
+    background: linear-gradient(
+      144deg,
+      rgb(18, 87, 165) 0%,
+      rgb(35, 119, 214) 52%,
+      rgb(16, 72, 136) 53%,
+      rgb(18, 80, 152) 86%
+    );
+  }
+}
+
+@keyframes fadeOutActive {
+  from {
+    opacity: 1;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 0.8;
+  }
+}
+
+@keyframes moveToActive {
+  from {
+    left: 16rem;
+    background-color: rgb(243, 244, 246); /* grey-100 */
+    box-shadow: none;
+    width: 15rem;
+    height: 15rem;
+    border-radius: 0%;
+  }
+  to {
+    left: 0;
+    background-color: white;
+    width: 16rem;
+    height: 18rem;
+    box-shadow: 0 4px 10px 7px rgba(147, 147, 147, 25%);
+    border-radius: 5%;
+  }
+}
+
+@keyframes fadeInNext {
+  from {
+    opacity: 0;
+    width: 15rem;
+    height: 15rem;
+    left: 16rem;
+  }
+  to {
+    opacity: 1;
+    width: 15rem;
+    height: 15rem;
+    left: 16rem;
+  }
+}
+
+/* Custom animation classes */
+.animate-fadeOutActive {
+  animation: fadeOutActive 400ms ease-in-out forwards;
+}
+
+.animate-moveToActive {
+  animation: moveToActive 600ms ease-in-out forwards;
+  z-index: 10;
+}
+
+.animate-fadeInNext {
+  animation: fadeInNext 400ms ease-in-out forwards;
+  z-index: 0;
+  background-color: rgb(243, 244, 246); /* grey-100 */
+}
+
+/* New animation for testimonial details */
+@keyframes fadeInDetails {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fadeInDetails {
+  animation: fadeInDetails 300ms ease-in-out forwards;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  background: var(--color-gray-100);
+  height: 10px;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: 0.2s;
+  transition: opacity 0.2s;
+  border-radius: 10px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.1);
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border: 2px solid #1b7ced;
+  border-radius: 100%;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  background: #04aa6d;
+  cursor: pointer;
 }
