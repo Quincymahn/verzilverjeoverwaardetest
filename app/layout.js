@@ -2,12 +2,12 @@ import CookieConsentBanner from "./_components/CookieConsentBanner";
 import Header from "./_components/Header";
 import "./globals.css";
 import { Lato, Poppins } from "next/font/google";
-import Script from "next/script";
+import Script from "next/script"; // Make sure this import is present
 
 const lato = Lato({
   subsets: ["latin"],
-  weight: ["300", "400", "700"], // Adjust weights as needed
-  variable: "--font-body", // Matches your CSS variable
+  weight: ["300", "400", "700"],
+  variable: "--font-body",
 });
 
 const poppins = Poppins({
@@ -16,16 +16,19 @@ const poppins = Poppins({
   variable: "--font-heading",
 });
 
-// GTM ID
-const GTM_ID = "GTM-NKR8PMTQ";
+const GTM_CONTAINER_ID = "GTM-P4LX2DS8";
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${lato.variable} ${poppins.variable}`}>
       <head>
-        {/* Use Next.js Script component for client-side script loading */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+
         <Script
-          id="gtm-script"
+          id="gtm-base-script"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
@@ -33,24 +36,26 @@ export default function RootLayout({ children }) {
               new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
               j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
               'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-              })(window,document,'script','dataLayer','${GTM_ID}');
+              })(window,document,'script','dataLayer','${GTM_CONTAINER_ID}');
             `,
           }}
         />
       </head>
-      <body>
-        {/* GTM noscript iframe for browsers with JavaScript disabled */}
+      <body className="min-w-0 overflow-x-hidden">
+        {/* Google Tag Manager noscript fallback */}
+        {/* Ensure this also uses the correct GTM_CONTAINER_ID */}
         <noscript>
           <iframe
-            src="https://www.googletagmanager.com/ns.html?id=GTM-NKR8PMTQ"
+            src={`https://www.googletagmanager.com/ns.html?id=${GTM_CONTAINER_ID}`}
             height="0"
             width="0"
             style={{ display: "none", visibility: "hidden" }}
           ></iframe>
         </noscript>
         <Header />
-        {children}
-        <CookieConsentBanner />
+        <main className="w-full min-w-0">{children}</main>
+        <CookieConsentBanner />{" "}
+        {/* This should ideally manage consent for GTM_CONTAINER_ID */}
       </body>
     </html>
   );

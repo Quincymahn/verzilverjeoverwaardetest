@@ -3,16 +3,6 @@
 import { useState, useEffect } from "react";
 import ThousandSeparator from "./ThousandSeparator";
 
-// Helper function to get CSS variable values (more robust than assuming they are always available)
-const getCssVariableValue = (variableName) => {
-  if (typeof window !== "undefined") {
-    return getComputedStyle(document.documentElement)
-      .getPropertyValue(variableName)
-      .trim();
-  }
-  return ""; // Fallback for SSR or if not found
-};
-
 const MultiStepTwo = ({
   marketValue,
   remainingMortgage,
@@ -21,15 +11,11 @@ const MultiStepTwo = ({
   setRemainingMortgage,
   setEquityToWithdraw,
 }) => {
-  const [primary700, setPrimary700] = useState("");
-  const [sliderTrackBg, setSliderTrackBg] = useState("");
+  // Track client-side hydration
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Fetch CSS variable values once on mount
-    setPrimary700(getCssVariableValue("--color-primary-700") || "#4338ca"); // Fallback if CSS var not found
-    setSliderTrackBg(
-      getCssVariableValue("--color-slider-track-bg") || "#e5e7eb"
-    ); // Fallback
+    setIsClient(true);
   }, []);
 
   const maxEquity = Math.max(marketValue - remainingMortgage, 0);
@@ -63,22 +49,24 @@ const MultiStepTwo = ({
   };
 
   const getSliderBackgroundStyle = (value, min, max) => {
-    if (!primary700 || !sliderTrackBg) return {}; // Don't style if colors not loaded
+    // Only apply custom styling after client-side hydration
+    if (!isClient) return {};
 
     const percentage = ((value - min) / (max - min)) * 100;
     // Handle cases where min === max (e.g., maxEquity is 0) to avoid division by zero
     const safePercentage =
       max === min ? 0 : Math.min(100, Math.max(0, percentage));
 
+    // Use CSS custom properties with fallbacks
     return {
-      background: `linear-gradient(to right, ${primary700} ${safePercentage}%, ${sliderTrackBg} ${safePercentage}%)`,
+      background: `linear-gradient(to right, var(--color-primary-700, #4338ca) ${safePercentage}%, var(--color-slider-track-bg, #e5e7eb) ${safePercentage}%)`,
     };
   };
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-4 text-text-50 font-medium">
-        <p>Wat is de marktwaarde van uw woning?</p>
+      <div className="xl:grid xl:grid-cols-2 gap-4 text-text-50 font-medium">
+        <p className="mb-2 xl:mb-0">Wat is de marktwaarde van uw woning?</p>
         <div className="w-full flex flex-col items-end gap-4 ml-auto">
           <input
             className="ml-auto slider w-full"
@@ -95,11 +83,11 @@ const MultiStepTwo = ({
             value={marketValue}
             onChange={handleMarketValueChange}
             step="5000"
-            className="w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
+            className="mb-5 w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
           />
         </div>
 
-        <p>Wat is uw resterende hypotheek?</p>
+        <p className="mb-2 xl:mb-0">Wat is uw resterende hypotheek?</p>
         <div className="w-full flex flex-col items-end gap-4 ml-auto">
           <input
             className="ml-auto slider w-full"
@@ -116,11 +104,11 @@ const MultiStepTwo = ({
             value={remainingMortgage}
             onChange={handleRemainingMortgageChange}
             step="5000"
-            className="w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
+            className="mb-5 w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
           />
         </div>
 
-        <p>Hoeveel overwaarde wilt u opnemen?</p>
+        <p className="mb-2 xl:mb-0">Hoeveel overwaarde wilt u opnemen?</p>
         <div className="w-full flex flex-col items-end gap-4 ml-auto">
           <input
             className="ml-auto slider w-full"
@@ -138,7 +126,7 @@ const MultiStepTwo = ({
             value={equityToWithdraw}
             onChange={handleEquityToWithdrawChange}
             step="1000"
-            className="w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
+            className=" w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
           />
         </div>
       </div>

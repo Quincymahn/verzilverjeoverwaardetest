@@ -3,16 +3,6 @@
 import { useState, useEffect } from "react";
 import ThousandSeparator from "./ThousandSeparator";
 
-// Helper function to get CSS variable values (more robust than assuming they are always available)
-const getCssVariableValue = (variableName) => {
-  if (typeof window !== "undefined") {
-    return getComputedStyle(document.documentElement)
-      .getPropertyValue(variableName)
-      .trim();
-  }
-  return ""; // Fallback for SSR or if not found
-};
-
 const MultiStepThree = ({
   register,
   setValue,
@@ -23,15 +13,11 @@ const MultiStepThree = ({
   const inkomenValue = watch("yearlyIncome");
   const partnerValue = watch("partnerIncome");
 
-  const [primary700, setPrimary700] = useState("");
-  const [sliderTrackBg, setSliderTrackBg] = useState("");
+  // Track client-side hydration
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Fetch CSS variable values once on mount
-    setPrimary700(getCssVariableValue("--color-primary-700") || "#4338ca"); // Fallback if CSS var not found
-    setSliderTrackBg(
-      getCssVariableValue("--color-slider-track-bg") || "#e5e7eb"
-    ); // Fallback
+    setIsClient(true);
   }, []);
 
   const handleInkomenValue = (e) => {
@@ -47,22 +33,23 @@ const MultiStepThree = ({
   };
 
   const getSliderBackgroundStyle = (value, min, max) => {
-    if (!primary700 || !sliderTrackBg) return {}; // Don't style if colors not loaded
+    // Only apply custom styling after client-side hydration
+    if (!isClient) return {};
 
     const percentage = ((value - min) / (max - min)) * 100;
-    // Handle cases where min === max (e.g., maxEquity is 0) to avoid division by zero
     const safePercentage =
       max === min ? 0 : Math.min(100, Math.max(0, percentage));
 
+    // Use CSS custom properties with fallbacks - this is the cleanest approach
     return {
-      background: `linear-gradient(to right, ${primary700} ${safePercentage}%, ${sliderTrackBg} ${safePercentage}%)`,
+      background: `linear-gradient(to right, var(--color-primary-700, #4338ca) ${safePercentage}%, var(--color-slider-track-bg, #e5e7eb) ${safePercentage}%)`,
     };
   };
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-4 text-text-50 font-medium">
-        <p>Waarvoor wilt u de overwaarde benutten?</p>
+      <div className="xl:grid xl:grid-cols-2 gap-4 text-text-50 font-medium">
+        <p className="mb-2">Waarvoor wilt u de overwaarde benutten?</p>
         <div className="w-full flex flex-col">
           <select
             className={`rounded-md w-full py-2 px-4 bg-gray-50 border-b-3 ${
@@ -89,7 +76,7 @@ const MultiStepThree = ({
           )}
         </div>
 
-        <p>Wat is uw bron van inkomen?</p>
+        <p className="mt-5 mb-2">Wat is uw bron van inkomen?</p>
         <div className="w-full flex flex-col">
           <select
             className={`rounded-md w-full py-2 px-4 bg-gray-50 border-b-3 ${
@@ -112,7 +99,7 @@ const MultiStepThree = ({
           )}
         </div>
 
-        <p>Wat is uw bruto jaar inkomen?</p>
+        <p className="mt-5 mb-2">Wat is uw bruto jaar inkomen?</p>
         <div className="w-full flex flex-col items-end gap-4 ml-auto">
           <input
             className="ml-auto slider w-full"
@@ -128,11 +115,11 @@ const MultiStepThree = ({
           <ThousandSeparator
             value={inkomenValue}
             onChange={handleInkomenValue}
-            className="w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
+            className="mb-5 w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
           />
         </div>
 
-        <p>Heeft u een partner?</p>
+        <p className="mb-2">Heeft u een partner?</p>
         <div className="flex flex-col">
           <div className="flex gap-4">
             <div>
@@ -169,7 +156,9 @@ const MultiStepThree = ({
 
         {hasPartner && (
           <>
-            <p>Wat is het bruto jaar inkomen van uw partner?</p>
+            <p className="mt-5 mb-2">
+              Wat is het bruto jaar inkomen van uw partner?
+            </p>
             <div className="w-full flex flex-col items-end gap-4 ml-auto">
               <input
                 className="ml-auto slider w-full"

@@ -2,44 +2,73 @@ import Image from "next/image";
 
 function TestimonialTrustPilot() {
   return (
-    <div className="relative flex flex-col justify-between h-full">
-      <div className="flex justify-between gap-4">
-        <div className="relative">
-          <Image
-            src="/img/kiyohreviewlogo.png"
-            width={60}
-            height={60}
-            alt="Kiyoh review logo"
-          />
-          <p className="absolute text-md font-semibold top-4.5 left-5">9.9</p>
-        </div>
-        <div>
-          <div className="flex gap-1 mt-1 mb-1">
-            {[...Array(5)].map((_, i) => (
-              <Image
-                key={i}
-                src="/img/starrating.png"
-                width={15}
-                height={15}
-                alt="Star rating"
-              />
-            ))}
-          </div>
-          <div className="text-center text-sm text-text-50">
-            <p>175</p>
-            <p>Beoordelingen</p>
-          </div>
-        </div>
+    <div className="flex flex-col items-center ">
+      <div className="flex items-end gap-1 mb-2">
+        <Image
+          src="/img/trustpilot-2.svg"
+          width={50}
+          height={50}
+          alt="trustpilot star"
+          className="w-8 h-8"
+        />
+        <p className="text-xl font-bold">Trustpilot</p>
       </div>
-      <div className="mt-auto">
-        <p className="text-sm mb-4 w-[90%]">
-          Deze klanten zijn u al voor gegaan
+      <div className="flex gap-[2px] mb-1">
+        {/* <span className=" px-1.5 bg-green-600 text-white text-xl">★</span>
+        <span className=" px-1.5 bg-green-600 text-white text-xl">★</span>
+        <span className=" px-1.5 bg-green-600 text-white text-xl">★</span>
+        <span className=" px-1.5 bg-green-600 text-white text-xl">★</span>
+        <span className=" px-1.5 bg-gray-300 text-white text-xl">★</span> */}
+        <Image
+          src="/img/trustpilotwhite.png"
+          width={100}
+          height={100}
+          alt="trustpilot star rating"
+          className="w-8 h-8 p-1 bg-[#08b87e]"
+        />
+        <Image
+          src="/img/trustpilotwhite.png"
+          width={100}
+          height={100}
+          alt="trustpilot star rating"
+          className="w-8 h-8 p-1 bg-[#08b87e]"
+        />
+        <Image
+          src="/img/trustpilotwhite.png"
+          width={100}
+          height={100}
+          alt="trustpilot star rating"
+          className="w-8 h-8 p-1 bg-[#08b87e]"
+        />
+        <Image
+          src="/img/trustpilotwhite.png"
+          width={100}
+          height={100}
+          alt="trustpilot star rating"
+          className="w-8 h-8 p-1 bg-[#08b87e]"
+        />
+        <Image
+          src="/img/trustpilotwhite.png"
+          width={100}
+          height={100}
+          alt="trustpilot star rating"
+          className="w-8 h-8 p-1 bg-gradient-to-r from-[#08b87e] from-50% to-gray-300 to-50%"
+        />
+      </div>
+      <div className="flex text-gray-500 text-xs gap-1 mb-4">
+        <p>
+          TrustScore <span className="font-semibold">4.4 / 5</span>{" "}
         </p>
+        <span>|</span>
+        <p className="font-semibold underline">127 reviews</p>
+      </div>
+      <div className="text-center">
+        <p className="text-sm mb-3">Deze klanten zijn u voor gegaan</p>
         <a
+          className="bg-accent-50 rounded-full py-1.5 duration-300 px-4 text-white font-semibold hover:shadow-md hover:shadow-gray-400 hover:-translate-y-1 inline-block"
           href="#"
-          className="btn-4 bg-accent-50 text-white py-2 px-4 rounded-full  hover:bg-accent-50/70 transition-all duration-300"
         >
-          <span>Vul het formulier in</span>
+          Vul het formulier in
         </a>
       </div>
     </div>

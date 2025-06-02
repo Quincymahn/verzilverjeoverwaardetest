@@ -47,25 +47,25 @@ const TimelineSection = () => {
 
   return (
     <>
-      <section className=" py-20">
+      <section className="py-10 xl:py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">
+          <div className="text-left xl:text-center mb-10 xl:mb-16">
+            <h2 className="text-2xl xl:text-4xl font-bold text-gray-900 mb-6">
               Waarom kiezen voor ons?
             </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            <p className="text-md xl:text-lg text-gray-600 max-w-3xl mx-auto">
               Bij Verzilverjeoverwaarde zetten we ons in om jouw financiële
               doelen te realiseren met persoonlijk advies en de beste
               hypotheekoplossingen. Ontdek ons eenvoudige proces:
             </p>
           </div>
 
-          <div className="relative mt-20">
+          <div className="relative mt-0 xl:mt-20">
             {/* Timeline line */}
             <div className="hidden md:block absolute h-full w-1 bg-gradient-to-b from-blue-500 to-blue-600 left-1/2 transform -translate-x-1/2 rounded-full"></div>
 
             {/* Timeline items */}
-            <div className="space-y-20">
+            <div className="space-y-10 xl:space-y-20">
               {timelineItems.map((item, index) => (
                 <div
                   key={item.step}
@@ -140,21 +140,21 @@ const TimelineSection = () => {
           </div>
         </div>
       </section>
-      <div className=" bg-[#e3f2fd] w-full p-30 relative overflow-hidden">
-        <div className="bg-[#ebf6fe] h-80 w-90 rounded-full absolute -top-30 -left-40"></div>
-        <div className="bg-[#ebf6fe] h-80 w-90 rounded-full absolute -bottom-30 -right-40"></div>
-        <h2 className="text-2xl font-semibold text-center">
+      <div className=" bg-[#e3f2fd] w-full p-15 xl:p-30 relative overflow-hidden">
+        <div className="bg-[#ebf6fe] h-50 w-60 xl:h-80 xl:w-90 rounded-full absolute -top-20 -left-30 - xl:-top-30 xl:-left-40"></div>
+        <div className="bg-[#ebf6fe] h-50 w-60 xl:h-80 xl:w-90 rounded-full absolute -bottom-20 -right-30 - xl:-bottom-30 xl:-right-40"></div>
+        <h2 className="text-2xl z-10 relative font-semibold text-center">
           Persoonlijk advies
         </h2>
-        <p className="mt-3 text-text-50 text-md max-w-2xl text-center mx-auto">
+        <p className="mt-3 text-text-50 z-10 relative text-md max-w-2xl text-center mx-auto">
           Onze hypotheekadviseurs helpen je bij het maken van een weloverwogen
           keuze die past bij jouw persoonlijke situatie en toekomstplannen. Maak
           direct een vrijblijvende afspraak
         </p>
-        <div className="flex justify-center">
+        <div className="flex justify-center z-10 relative">
           <a
             href="#"
-            className="text-white mt-4 justify-center text-sm py-3 px-7 rounded-full bg-primary-700  hover:bg-primary-700/70 transition-all duration-300 inline-flex gap-2 items-center"
+            className="text-white mt-4 justify-center text-sm py-3 px-7 rounded-full bg-primary-700 transition-all duration-300 inline-flex gap-2 items-center hover:-translate-y-1 hover:shadow-md hover:shadow-gray-400"
           >
             Afspraak maken
             <svg

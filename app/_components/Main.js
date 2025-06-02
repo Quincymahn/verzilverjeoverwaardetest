@@ -20,41 +20,43 @@ function Main() {
   return (
     <main className="relative bg-gradient-to-br from-[#0358BA] to-[#1B7CED] overflow-hidden">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center pt-15">
-          <h1 className="text-white text-4xl mb-3 font-semibold drop-shadow-[0px_4px_4px_rgba(0,0,0,0.1)]">
+        <div className="text-center pt-8 xl:pt-15">
+          <h1 className="text-white xl:text-4xl lg:text-4xl md:text-2xl text-xl mb-1 xl:mb-3 font-semibold drop-shadow-[0px_4px_4px_rgba(0,0,0,0.1)] ">
             Welkom bij verzilverjeoverwaarde.nl
           </h1>
-          <p className="text-gray-100 text-xl mb-8 font-light">
+          <p className="text-gray-100 xl:text-xl text-sm xl:mb-8 mb-4 font-light">
             Ontdek onze hypotheek mogelijkeden in slechts 3 minuten
           </p>
         </div>
 
-        <div className="flex gap-6 items-center justify-center p-2">
-          <div className="flex items-center gap-2">
+        <div className="flex xl:gap-6 items-center justify-center p-2">
+          <div className="flex items-center gap-2 flex-col xl:flex-row text-center">
             <HiOutlineChatBubbleLeftRight className=" bg-[#589ded]  text-white w-6 h-6 flex items-center justify-center p-1 rounded-full" />
-            <span className="text-white font-semibold">
+            <span className="text-white font-semibold text-xs xl:text-base">
               Vrijblijvend Advies
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-col xl:flex-row text-center">
             <HiOutlineCloud className=" bg-[#589ded]  text-white w-6 h-6 flex items-center justify-center p-1 rounded-full" />
-            <span className="text-white font-semibold">Volledig Online</span>
+            <span className="text-white font-semibold text-xs xl:text-base">
+              Volledig Online
+            </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-col xl:flex-row text-center">
             <HiOutlineBanknotes className=" bg-[#589ded]  text-white w-6 h-6 flex items-center justify-center p-1 rounded-full" />
-            <span className="text-white font-semibold">
+            <span className="text-white font-semibold text-xs xl:text-base">
               Altijd Laagste Rente
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-col xl:flex-row text-center">
             <HiOutlineUserGroup className=" bg-[#589ded]  text-white w-6 h-6 flex items-center justify-center p-1 rounded-full" />
-            <span className="text-white font-semibold">
+            <span className="text-white font-semibold text-xs xl:text-base">
               Deskundige Adviseurs
             </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-10 items-center w-full -mt-6 mb-[25rem] gap-2">
+        <div className="flex flex-col xl:grid xl:grid-cols-10 grid-rows-2 xl:grid-rows-none px-2 xl:px-0 items-center w-full -mt-6 xl:mb-[25rem] mb-40 gap-2">
           {/* Pass state and setter functions to MultiStepForm */}
           <MultiStepForm
             marketValue={marketValue}
@@ -74,11 +76,11 @@ function Main() {
       </div>
 
       <Image
-        src="/img/untitled.png"
+        src="/img/wavepattern.png"
         alt="Decorative wave pattern"
         width={1300}
         height={1300}
-        className="absolute bottom-0 right-0 w-full"
+        className="absolute bottom-0 right-0 xl:w-full invisible xl:visible"
       />
 
       <svg

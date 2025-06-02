@@ -18,7 +18,7 @@ function MultistepFormInfoSection({
     ((equity - equityToWithdraw) / marketValue) * 100;
 
   return (
-    <div className="col-span-3 gap-2 mb-auto mt-10 w-full">
+    <div className="xl:col-span-3 row-span-1 gap-2 mb-auto xl:mt-10 w-full">
       <div className="mb-2 shadow-lg bg-white rounded-lg">
         <div className="flex items-center justify-between bg-gray-100 p-3 rounded-tl-lg rounded-tr-lg">
           <div className="flex items-center gap-2">
