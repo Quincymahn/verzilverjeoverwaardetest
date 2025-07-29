@@ -3,10 +3,16 @@ import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    console.log("POST request received at /api/postcode");
+    console.log(
+      "POST request received at /api/postcode (for postcode.eu NL API)"
+    );
 
-    const { postcode, housenumber } = await request.json();
-    console.log("Request data:", { postcode, housenumber });
+    const { postcode, housenumber, houseNumberAddition } = await request.json(); // Expect houseNumberAddition if available
+    console.log("Request data:", {
+      postcode,
+      housenumber,
+      houseNumberAddition,
+    });
 
     if (!postcode || !housenumber) {
       return NextResponse.json(
@@ -15,10 +21,10 @@ export async function POST(request) {
       );
     }
 
-    // Remove spaces and make uppercase for postcode
     const cleanPostcode = postcode.replace(/\s+/g, "").toUpperCase();
+    const cleanHousenumber = String(housenumber).trim(); // Ensure housenumber is a string for URL
 
-    // Validate Dutch postcode format (1234AB)
+    // Validate Dutch postcode format (1234AB) - good to keep
     const postcodeRegex = /^[1-9][0-9]{3}[A-Z]{2}$/;
     if (!postcodeRegex.test(cleanPostcode)) {
       return NextResponse.json(
@@ -27,89 +33,91 @@ export async function POST(request) {
       );
     }
 
-    // Check if environment variables are set
     if (
-      !process.env.POSTCODE_NL_PUBLIC_KEY ||
-      !process.env.POSTCODE_NL_SECRET_KEY
+      !process.env.POSTCODE_NL_PUBLIC_KEY || // You might want to rename these env vars to POSTCODE_EU_KEY
+      !process.env.POSTCODE_NL_SECRET_KEY // and POSTCODE_EU_SECRET for clarity
     ) {
-      console.error("Missing postcode.nl API credentials");
+      console.error("Missing postcode.eu API credentials");
       return NextResponse.json(
         { error: "API configuration error - missing credentials" },
         { status: 500 }
       );
     }
 
-    const url = `https://api.postcode.nl/v1/addresses/${cleanPostcode}/${housenumber}`;
-    console.log("Calling postcode.nl API:", url);
+    // Construct the correct URL for postcode.eu NL API
+    let apiUrl = `https://api.postcode.eu/nl/v1/addresses/postcode/${cleanPostcode}/${encodeURIComponent(
+      cleanHousenumber
+    )}`;
+    if (houseNumberAddition && String(houseNumberAddition).trim() !== "") {
+      apiUrl += `/${encodeURIComponent(String(houseNumberAddition).trim())}`;
+    }
 
-    const authString = Buffer.from(
-      `${process.env.POSTCODE_NL_PUBLIC_KEY}:${process.env.POSTCODE_NL_SECRET_KEY}`
-    ).toString("base64");
+    console.log("Calling postcode.eu NL API:", apiUrl);
 
-    const response = await fetch(url, {
+    const apiKey = process.env.POSTCODE_NL_PUBLIC_KEY; // This is your 'Key'
+    const apiSecret = process.env.POSTCODE_NL_SECRET_KEY; // This is your 'Secret'
+
+    const authString = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
+
+    const response = await fetch(apiUrl, {
       method: "GET",
       headers: {
         Authorization: `Basic ${authString}`,
-        "Content-Type": "application/json",
-        "User-Agent": "YourAppName/1.0", // Add a user agent
+        // "Content-Type": "application/json", // DO NOT SEND THIS ON A GET REQUEST
+        "User-Agent": "VerzilverJeOverwaardeApp/1.0", // Be specific with User-Agent
       },
     });
 
-    console.log("Postcode.nl API response status:", response.status);
-    console.log(
-      "Postcode.nl API response headers:",
-      Object.fromEntries(response.headers.entries())
-    );
+    console.log("Postcode.eu NL API response status:", response.status);
+    // console.log( // Optional: log all headers from postcode.eu
+    //   "Postcode.eu NL API response headers:",
+    //   Object.fromEntries(response.headers.entries())
+    // );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("Postcode.nl API error response:", errorText);
-
-      let errorMessage = "Unknown error occurred";
+      console.error("Postcode.eu NL API error response text:", errorText);
+      let errorMessage = `API error (${response.status})`;
       try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData.error || errorData.message || errorMessage;
-      } catch (parseError) {
-        errorMessage = errorText || errorMessage;
+        const errorData = JSON.parse(errorText); // postcode.eu might return JSON errors for some 4xx/5xx
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch (e) {
+        // If not JSON, use the text or default
+        if (
+          response.status === 400 &&
+          errorText.toLowerCase().includes("bad request")
+        ) {
+          errorMessage =
+            "Bad request to Postcode.eu API. Check parameters and encoding.";
+        } else if (errorText.trim()) {
+          errorMessage = errorText.trim();
+        }
       }
-
-      if (response.status === 404) {
-        return NextResponse.json(
-          { error: "Address not found for this postcode and house number" },
-          { status: 404 }
-        );
-      }
-      if (response.status === 401) {
-        return NextResponse.json(
-          { error: "API authentication failed - check your credentials" },
-          { status: 500 }
-        );
-      }
-      if (response.status === 429) {
-        return NextResponse.json(
-          { error: "Too many requests. Please try again later." },
-          { status: 429 }
-        );
-      }
-      if (response.status === 400) {
-        return NextResponse.json(
-          { error: `Bad request: ${errorMessage}` },
-          { status: 400 }
-        );
-      }
+      // More specific error handling based on postcode.eu documentation if available
+      if (response.status === 401)
+        errorMessage =
+          "Authentication failed with Postcode.eu API. Check Key and Secret.";
+      if (response.status === 404)
+        errorMessage = "Address not found by Postcode.eu API.";
 
       return NextResponse.json(
-        { error: `API error (${response.status}): ${errorMessage}` },
-        { status: 500 }
+        { error: errorMessage },
+        { status: response.status } // Use the status from postcode.eu
       );
     }
 
     const data = await response.json();
-    console.log("Postcode.nl API response data:", data);
+    console.log("Postcode.eu NL API response data:", data);
 
-    // Validate that we have the required data
+    // Adapt this to the actual structure of the postcode.eu NL API response
+    // Based on other docs, it might be something like:
+    // data.streetName, data.city, data.municipalityName, data.provinceAbbreviation, data.houseNumber, data.houseNumberAddition
     if (!data.street || !data.city) {
-      console.error("Incomplete address data received:", data);
+      // Adjust these field names based on actual response
+      console.error(
+        "Incomplete address data received from postcode.eu NL API:",
+        data
+      );
       return NextResponse.json(
         { error: "Incomplete address data received from API" },
         { status: 500 }
@@ -117,18 +125,17 @@ export async function POST(request) {
     }
 
     return NextResponse.json({
-      street: data.street,
-      city: data.city,
-      municipality: data.municipality || data.city,
+      street: data.street, // Adjust based on actual response
+      city: data.city, // Adjust based on actual response
+      // Add other fields as needed from the data object
+      municipality: data.municipality,
       province: data.province,
       postcode: data.postcode,
       housenumber: data.houseNumber,
       houseNumberAddition: data.houseNumberAddition || "",
     });
   } catch (error) {
-    console.error("Postcode API error:", error);
-    console.error("Error stack:", error.stack);
-
+    console.error("Postcode API (internal server) error:", error);
     return NextResponse.json(
       { error: "Failed to fetch address data. Please try again." },
       { status: 500 }

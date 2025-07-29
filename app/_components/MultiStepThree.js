@@ -1,61 +1,144 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useFormContext } from "react-hook-form";
 import ThousandSeparator from "./ThousandSeparator";
 
-const MultiStepThree = ({
-  register,
-  setValue,
-  watch,
-  formState: { errors },
-}) => {
+const MultiStepThree = ({ onFieldInteraction, onAddressLoadingChange }) => {
+  const {
+    register,
+    setValue,
+    watch,
+    formState: { errors },
+    clearErrors: clearErrorsRHF,
+  } = useFormContext();
+
   const hasPartner = watch("hasPartner");
   const inkomenValue = watch("yearlyIncome");
   const partnerValue = watch("partnerIncome");
-
-  // Track client-side hydration
   const [isClient, setIsClient] = useState(false);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [displayError, setDisplayError] = useState("");
+  const [showAddressFields, setShowAddressFields] = useState(false);
+
+  const watchedPostcode = watch("postalCode");
+  const watchedHouseNumber = watch("houseNumber");
+  const watchedStreet = watch("street"); // Watch street to decide when to show the fields
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    if (watch("hasPartner") === undefined) {
+      setValue("hasPartner", "nee");
+    }
+    // If street value exists on load, show the fields
+    if (watchedStreet) {
+      setShowAddressFields(true);
+    }
+  }, [watch, setValue, watchedStreet]);
 
-  const handleInkomenValue = (e) => {
-    setValue("yearlyIncome", parseInt(e.target.value));
+  useEffect(() => {
+    onAddressLoadingChange?.(isLoading);
+  }, [isLoading, onAddressLoadingChange]);
+
+  const fetchAddressData = async (postcode, housenumber) => {
+    if (!postcode || !housenumber) return;
+
+    setIsLoading(true);
+    setDisplayError("");
+    clearErrorsRHF(["street", "city"]);
+
+    try {
+      const response = await fetch("/api/postcode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          postcode: postcode.trim(),
+          housenumber: housenumber.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Adres niet gevonden. Controleer uw invoer.`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (e) {
+          /* Fallback */
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      if (data.street && data.city) {
+        setValue("street", data.street, { shouldValidate: true });
+        setValue("city", data.city, { shouldValidate: true });
+        setShowAddressFields(true);
+      } else {
+        setValue("street", "", { shouldValidate: true });
+        setValue("city", "", { shouldValidate: true });
+        setDisplayError(
+          "Adresgegevens onvolledig. Controleer postcode/huisnummer."
+        );
+        setShowAddressFields(false);
+      }
+    } catch (err) {
+      setDisplayError(err.message || "Kon adresgegevens niet ophalen.");
+      setValue("street", "", { shouldValidate: true });
+      setValue("city", "", { shouldValidate: true });
+      setShowAddressFields(false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handlePartnerValue = (e) => {
-    setValue("partnerIncome", parseInt(e.target.value));
-  };
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const postcodeRegex = /^[1-9][0-9]{3}\s?[a-zA-Z]{2}$/;
+      if (
+        watchedPostcode &&
+        watchedHouseNumber &&
+        postcodeRegex.test(watchedPostcode.trim())
+      ) {
+        fetchAddressData(watchedPostcode, watchedHouseNumber);
+      } else if (watchedPostcode || watchedHouseNumber) {
+        // Clear fields if inputs are partial or invalid, but don't show an error yet
+        setValue("street", "", { shouldValidate: true });
+        setValue("city", "", { shouldValidate: true });
+        setShowAddressFields(false);
+        setDisplayError("");
+      }
+    }, 800);
 
-  const handlePartnerChange = (e) => {
-    setValue("hasPartner", e.target.value === "Ja");
-  };
+    return () => clearTimeout(timer);
+  }, [watchedPostcode, watchedHouseNumber]);
+
+  const updateYearlyIncome = (newValue) =>
+    setValue("yearlyIncome", parseInt(newValue) || 0);
+  const updatePartnerIncome = (newValue) =>
+    setValue("partnerIncome", parseInt(newValue) || 0);
 
   const getSliderBackgroundStyle = (value, min, max) => {
-    // Only apply custom styling after client-side hydration
     if (!isClient) return {};
-
-    const percentage = ((value - min) / (max - min)) * 100;
-    const safePercentage =
-      max === min ? 0 : Math.min(100, Math.max(0, percentage));
-
-    // Use CSS custom properties with fallbacks - this is the cleanest approach
+    const val = parseInt(value) || 0;
+    const percentage = max === min ? 0 : ((val - min) / (max - min)) * 100;
     return {
-      background: `linear-gradient(to right, var(--color-primary-700, #4338ca) ${safePercentage}%, var(--color-slider-track-bg, #e5e7eb) ${safePercentage}%)`,
+      background: `linear-gradient(to right, var(--color-primary-700, #4338ca) ${percentage}%, var(--color-slider-track-bg, #e5e7eb) ${percentage}%)`,
     };
   };
 
   return (
     <div>
-      <div className="xl:grid xl:grid-cols-2 gap-4 text-text-50 font-medium">
-        <p className="mb-2">Waarvoor wilt u de overwaarde benutten?</p>
-        <div className="w-full flex flex-col">
+      <div className="xl:grid xl:grid-cols-2 gap-x-4 gap-y-1 text-text-50 font-medium">
+        {/* Waarvoor wilt u de overwaarde benutten? */}
+        <p className="mb-2 xl:mt-4">Waarvoor wilt u de overwaarde benutten?</p>
+        <div className="w-full flex flex-col mb-4">
           <select
             className={`rounded-md w-full py-2 px-4 bg-gray-50 border-b-3 ${
               errors.purpose ? "border-b-red-500" : "border-b-gray-200"
             } focus:border-b-3 focus:border-b-blue-500 border border-gray-200 focus:outline-none transition-all duration-300`}
             {...register("purpose", { required: "Selecteer een optie" })}
+            onBlur={() => onFieldInteraction?.("purpose")}
           >
             <option value="">-- Kies een optie --</option>
             <option value="Verbouwen / verduurzamen">
@@ -76,8 +159,9 @@ const MultiStepThree = ({
           )}
         </div>
 
-        <p className="mt-5 mb-2">Wat is uw bron van inkomen?</p>
-        <div className="w-full flex flex-col">
+        {/* Wat is uw bron van inkomen? */}
+        <p className="mb-2 xl:mt-4">Wat is uw bron van inkomen?</p>
+        <div className="w-full flex flex-col mb-4">
           <select
             className={`rounded-md w-full py-2 px-4 bg-gray-50 border-b-3 ${
               errors.incomeSource ? "border-b-red-500" : "border-b-gray-200"
@@ -85,6 +169,7 @@ const MultiStepThree = ({
             {...register("incomeSource", {
               required: "Selecteer een inkomensbron",
             })}
+            onBlur={() => onFieldInteraction?.("incomeSource")}
           >
             <option value="">-- Kies een optie --</option>
             <option value="Loondienst">Loondienst</option>
@@ -99,36 +184,147 @@ const MultiStepThree = ({
           )}
         </div>
 
-        <p className="mt-5 mb-2">Wat is uw bruto jaar inkomen?</p>
-        <div className="w-full flex flex-col items-end gap-4 ml-auto">
+        {/* Wat is uw adres? */}
+        <p className="mb-3 xl:mt-4">Wat is uw adres?</p>
+        <div className="w-full flex flex-col mb-1">
+          <div className="grid grid-cols-3 gap-2">
+            <div className="col-span-2">
+              <input
+                type="text"
+                placeholder="Postcode"
+                className={`w-full py-2 px-4 bg-gray-50 rounded-md border-b-3 ${
+                  errors.postalCode ? "border-b-red-500" : "border-b-gray-200"
+                } focus:border-b-3 focus:border-b-blue-500 border border-gray-200 focus:outline-none transition-all duration-300`}
+                {...register("postalCode", {
+                  required: "Postcode is verplicht",
+                  pattern: {
+                    value: /^[1-9][0-9]{3}\s?[a-zA-Z]{2}$/,
+                    message: "Ongeldige postcode",
+                  },
+                })}
+                onBlur={() => onFieldInteraction?.("postalCode")}
+              />
+              {errors.postalCode && (
+                <span className="text-red-500 text-sm mt-1">
+                  {errors.postalCode.message}
+                </span>
+              )}
+            </div>
+            <div>
+              <input
+                type="text"
+                placeholder="Huisnr."
+                className={`w-full py-2 px-4 bg-gray-50 rounded-md border-b-3 ${
+                  errors.houseNumber ? "border-b-red-500" : "border-b-gray-200"
+                } focus:border-b-3 focus:border-b-blue-500 border border-gray-200 focus:outline-none transition-all duration-300`}
+                {...register("houseNumber", {
+                  required: "Huisnr. is verplicht",
+                })}
+                onBlur={() => onFieldInteraction?.("houseNumber")}
+              />
+              {errors.houseNumber && (
+                <span className="text-red-500 text-sm mt-1">
+                  {errors.houseNumber.message}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* This container will hold the status and auto-filled fields, spanning both columns */}
+        <div className="mb-4 xl:col-span-2">
+          {isLoading && (
+            <div className="flex items-center justify-end py-2 pr-2">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+              <span className="ml-2 text-sm text-gray-600">
+                Adres opzoeken...
+              </span>
+            </div>
+          )}
+          {displayError && !isLoading && (
+            <div className="text-right pr-2">
+              <p className="text-sm text-red-600">{displayError}</p>
+            </div>
+          )}
+          {showAddressFields && !isLoading && (
+            <div className="grid xl:grid-cols-2 gap-x-4">
+              {/* Empty cell to push the fields to the right column on XL screens */}
+              <div></div>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Straat"
+                    className={`w-full py-2 px-4 bg-gray-100 rounded-md border-b-3 ${
+                      errors.street ? "border-b-red-500" : "border-b-gray-200"
+                    } border border-gray-200 cursor-not-allowed`}
+                    {...register("street", { required: "Straat is verplicht" })}
+                    readOnly
+                  />
+                  {errors.street && (
+                    <span className="text-red-500 text-sm mt-1">
+                      {errors.street.message}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Plaats"
+                    className={`w-full py-2 px-4 bg-gray-100 rounded-md border-b-3 ${
+                      errors.city ? "border-b-red-500" : "border-b-gray-200"
+                    } border border-gray-200 cursor-not-allowed`}
+                    {...register("city", { required: "Plaats is verplicht" })}
+                    readOnly
+                  />
+                  {errors.city && (
+                    <span className="text-red-500 text-sm mt-1">
+                      {errors.city.message}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Wat is uw bruto jaar inkomen? */}
+        <p className="mb-2 xl:mt-4">Wat is uw bruto jaar inkomen?</p>
+        <div className="w-full flex flex-col items-end gap-4 ml-auto mb-4">
           <input
             className="ml-auto slider w-full"
             type="range"
             min="0"
             max="100000"
             step="500"
-            value={inkomenValue}
-            onChange={handleInkomenValue}
-            id="myRange"
+            value={inkomenValue || 0}
+            onChange={(e) => updateYearlyIncome(e.target.value)}
+            onMouseDown={() => onFieldInteraction?.("yearlyIncome_range")}
             style={getSliderBackgroundStyle(inkomenValue, 0, 100000)}
           />
           <ThousandSeparator
-            value={inkomenValue}
-            onChange={handleInkomenValue}
-            className="mb-5 w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
+            value={inkomenValue || 0}
+            onChange={(e) => updateYearlyIncome(e.target.value)}
+            onFocus={() => onFieldInteraction?.("yearlyIncome_input")}
+            onBlur={() => onFieldInteraction?.("yearlyIncome_input_blur")}
+            className="w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none"
           />
         </div>
 
-        <p className="mb-2">Heeft u een partner?</p>
-        <div className="flex flex-col">
+        {/* Heeft u een partner? */}
+        <p className="mb-2 xl:mt-4">Heeft u een partner?</p>
+        <div className="flex flex-col mb-4">
           <div className="flex gap-4">
             <div>
               <input
                 type="radio"
                 id="ja"
-                value="Ja"
-                checked={hasPartner}
-                onChange={handlePartnerChange}
+                value="ja"
+                {...register("hasPartner")}
+                onChange={(e) => {
+                  setValue("hasPartner", e.target.value);
+                  onFieldInteraction?.("hasPartner_ja");
+                }}
               />
               <label htmlFor="ja" className="ml-1">
                 Ja
@@ -138,9 +334,13 @@ const MultiStepThree = ({
               <input
                 type="radio"
                 id="nee"
-                value="Nee"
-                checked={!hasPartner}
-                onChange={handlePartnerChange}
+                value="nee"
+                {...register("hasPartner")}
+                checked={hasPartner === "nee" || !hasPartner}
+                onChange={(e) => {
+                  setValue("hasPartner", e.target.value);
+                  onFieldInteraction?.("hasPartner_nee");
+                }}
               />
               <label htmlFor="nee" className="ml-1">
                 Nee
@@ -154,9 +354,9 @@ const MultiStepThree = ({
           )}
         </div>
 
-        {hasPartner && (
+        {hasPartner === "ja" && (
           <>
-            <p className="mt-5 mb-2">
+            <p className="mb-2 xl:mt-4">
               Wat is het bruto jaar inkomen van uw partner?
             </p>
             <div className="w-full flex flex-col items-end gap-4 ml-auto">
@@ -166,15 +366,17 @@ const MultiStepThree = ({
                 min="0"
                 max="100000"
                 step="500"
-                value={partnerValue}
-                onChange={handlePartnerValue}
-                id="partnerRange"
+                value={partnerValue || 0}
+                onChange={(e) => updatePartnerIncome(e.target.value)}
+                onMouseDown={() => onFieldInteraction?.("partnerIncome_range")}
                 style={getSliderBackgroundStyle(partnerValue, 0, 100000)}
               />
               <ThousandSeparator
-                value={partnerValue}
-                onChange={handlePartnerValue}
-                className="w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
+                value={partnerValue || 0}
+                onChange={(e) => updatePartnerIncome(e.target.value)}
+                onFocus={() => onFieldInteraction?.("partnerIncome_input")}
+                onBlur={() => onFieldInteraction?.("partnerIncome_input_blur")}
+                className="w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none"
               />
             </div>
           </>

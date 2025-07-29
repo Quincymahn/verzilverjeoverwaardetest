@@ -62,8 +62,13 @@ function BankCtaSection() {
 
         {/* Rating badge */}
         <div className="border border-green-200 bg-green-50/70 py-2 px-3 gap-2 rounded-full inline-flex font-semibold text-gray-700 text-sm">
-          <span className="text-green-500">★★★★★</span>
-          <span>4.8/5 (127 reviews)</span>
+          <span className="text-green-500">
+            ★★★★
+            <span className="bg-gradient-to-r from-green-500 from-50% to-gray-200 to-50% bg-clip-text text-transparent">
+              ★
+            </span>
+          </span>
+          <span>4.4/5 (127 reviews)</span>
         </div>
       </div>
 
@@ -124,8 +129,13 @@ function BankCtaSection() {
 
         {/* Rating badge */}
         <div className="border border-green-200 bg-green-50/70 py-2 px-3 gap-2 rounded-full inline-flex font-semibold text-gray-700">
-          <span className="text-green-500">★★★★★</span>
-          <span>4.8/5 (127 reviews)</span>
+          <span className="text-green-500">
+            ★★★★
+            <span className="bg-gradient-to-r from-green-500 from-50% to-gray-200 to-50% bg-clip-text text-transparent">
+              ★
+            </span>
+          </span>
+          <span>4.4/5 (127 reviews)</span>
         </div>
       </div>
 
@@ -177,8 +187,13 @@ function BankCtaSection() {
           />
         </div>
         <div className="border border-green-200 my-auto bg-green-50/70 py-2 px-3 gap-2 rounded-full inline-flex font-semibold text-gray-700">
-          <span className="text-green-500">★★★★★</span>
-          <span>4.8/5 (127 reviews)</span>
+          <span className="text-green-500">
+            ★★★★
+            <span className="bg-gradient-to-r from-green-500 from-50% to-gray-200 to-50% bg-clip-text text-transparent">
+              ★
+            </span>
+          </span>
+          <span>4.4/5 (127 reviews)</span>
         </div>
       </div>
     </div>

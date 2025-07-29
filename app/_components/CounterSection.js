@@ -6,7 +6,7 @@ function CounterSection() {
           {/* Counter 1 */}
           <div className="text-center py-6 sm:py-8">
             <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-blue-600 mb-2 sm:mb-3">
-              10+
+              7+
             </div>
             <div className="text-sm sm:text-base lg:text-lg text-gray-700 font-medium">
               Jaar ervaring
@@ -16,7 +16,7 @@ function CounterSection() {
           {/* Counter 2 */}
           <div className="text-center py-6 sm:py-8 border-t sm:border-t-0 sm:border-l sm:border-r border-gray-200">
             <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-blue-600 mb-2 sm:mb-3">
-              1200+
+              4200+
             </div>
             <div className="text-sm sm:text-base lg:text-lg text-gray-700 font-medium">
               Hypotheken geregeld

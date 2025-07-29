@@ -1,17 +1,80 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getLastEntryTime } from "../_lib/timeService";
 
-// Modified MultistepFormInfoSection to correctly display the equityToWithdraw from the slider
 function MultistepFormInfoSection({
   marketValue,
   remainingMortgage,
   equityToWithdraw,
 }) {
-  // Calculate the equity (overwaarde)
   const equity = marketValue - remainingMortgage;
 
-  // Calculate percentages for progress bar
+  const [lastEntryTime, setLastEntryTime] = useState("...");
+  const [fetchTimeError, setFetchTimeError] = useState(null);
+
+  const [totalEntryCount, setTotalEntryCount] = useState("...");
+  const [todayEntryCount, setTodayEntryCount] = useState("..."); // New state for today's count
+  const [fetchCountsError, setFetchCountsError] = useState(null); // Combined error state for counts
+
+  useEffect(() => {
+    async function fetchTime() {
+      try {
+        const time = await getLastEntryTime();
+        setLastEntryTime(time || "--:--");
+        setFetchTimeError(null);
+      } catch (error) {
+        console.error("Error in component fetching time:", error);
+        setLastEntryTime("Error");
+        setFetchTimeError(error.message || "Failed to load time.");
+      }
+    }
+
+    async function fetchEntryCounts() {
+      // Renamed for clarity
+      try {
+        const response = await fetch("/api/entry-count");
+        if (!response.ok) {
+          const errorData = await response
+            .json()
+            .catch(() => ({ error: "Unknown error fetching counts" }));
+          throw new Error(
+            errorData.details ||
+              errorData.error ||
+              `HTTP error! status: ${response.status}`
+          );
+        }
+        const data = await response.json();
+
+        if (typeof data.totalCount !== "undefined") {
+          setTotalEntryCount(
+            new Intl.NumberFormat("nl-NL").format(data.totalCount)
+          );
+        } else {
+          setTotalEntryCount("N/A"); // Or some other placeholder
+          console.warn("totalCount not found in API response");
+        }
+
+        if (typeof data.todayCount !== "undefined") {
+          setTodayEntryCount(data.todayCount.toString()); // todayCount is likely a small number, no need for complex formatting unless desired
+        } else {
+          setTodayEntryCount("N/A");
+          console.warn("todayCount not found in API response");
+        }
+
+        setFetchCountsError(null);
+      } catch (error) {
+        console.error("Error fetching entry counts:", error);
+        setTotalEntryCount("Error");
+        setTodayEntryCount("Error");
+        setFetchCountsError(error.message || "Failed to load entry counts.");
+      }
+    }
+
+    fetchTime();
+    fetchEntryCounts(); // Call the updated function
+  }, []);
+
   const mortgagePercentage = (remainingMortgage / marketValue) * 100;
   const withdrawPercentage = (equityToWithdraw / marketValue) * 100;
   const remainingEquityPercentage =
@@ -19,7 +82,9 @@ function MultistepFormInfoSection({
 
   return (
     <div className="xl:col-span-3 row-span-1 gap-2 mb-auto xl:mt-10 w-full">
+      {/* Uw woning card - unchanged */}
       <div className="mb-2 shadow-lg bg-white rounded-lg">
+        {/* ... (content of Uw woning card) ... */}
         <div className="flex items-center justify-between bg-gray-100 p-3 rounded-tl-lg rounded-tr-lg">
           <div className="flex items-center gap-2">
             <svg
@@ -36,21 +101,18 @@ function MultistepFormInfoSection({
                 d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
               />
             </svg>
-
             <p className="text-gray-800 font-semibold">Uw woning</p>
           </div>
           <p className="py-1 px-2 bg-accent-50 font-semibold text-xs inline rounded-xl text-white">
             Waarde inzicht
           </p>
         </div>
-
         <div className="flex justify-between mb-2 pt-3 px-3">
           <p className="text-gray-500">Woningwaarde</p>
           <p className="font-semibold text-black">
             € {new Intl.NumberFormat("nl-NL").format(marketValue)}
           </p>
         </div>
-
         <div className="px-3">
           <div className="w-full h-10 border border-gray-200 bg-gray-100 rounded-lg flex mb-2">
             <p
@@ -71,7 +133,6 @@ function MultistepFormInfoSection({
             ></p>
           </div>
         </div>
-
         <div className="flex justify-between mb-3 pt-3 px-3">
           <p className="text-xs text-black font-semibold">
             <span className="text-gray-500 font-medium">Hypotheek: </span> €{" "}
@@ -82,7 +143,6 @@ function MultistepFormInfoSection({
             {new Intl.NumberFormat("nl-NL").format(equity)}
           </p>
         </div>
-
         <div className="flex justify-between mb-3 pt-1 px-3">
           <p className="text-xs text-black font-semibold">
             <span className="text-gray-500 font-medium">Op te nemen: </span> €{" "}
@@ -93,11 +153,9 @@ function MultistepFormInfoSection({
             {new Intl.NumberFormat("nl-NL").format(equity - equityToWithdraw)}
           </p>
         </div>
-
         <div className="px-3">
           <div className="w-full h-[1px] border-b-1 border-gray-200"></div>
         </div>
-
         <div className="flex gap-2 py-3 px-3">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -120,7 +178,9 @@ function MultistepFormInfoSection({
         </div>
       </div>
 
+      {/* Maandlasten / Veilig & Zeker card - unchanged */}
       <div className="grid grid-cols-2 bg-white p-3 rounded-lg gap-2 mb-2">
+        {/* ... (content of Maandlasten / Veilig & Zeker card) ... */}
         <div className="p-2 border border-blue-200 flex flex-col items-center justify-center rounded-lg text-center bg-blue-100">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -139,7 +199,6 @@ function MultistepFormInfoSection({
           <p className="text-blue-800 text-sm font-semibold">Maandlasten</p>
           <p className="text-blue-600 text-xs">Bespaar tot wel €250</p>
         </div>
-
         <div className="p-2 border border-emerald-200 bg-emerald-100 flex flex-col items-center justify-center rounded-lg text-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -165,6 +224,7 @@ function MultistepFormInfoSection({
       <div className="bg-white shadow-lg border border-gray-200 overflow-hidden rounded-lg">
         <div className="flex bg-gray-50 justify-between border-b p-3 border-gray-100">
           <span className="flex gap-2 text-primary-700 items-center">
+            {/* ... (laatste aanvraag icon) ... */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -181,8 +241,8 @@ function MultistepFormInfoSection({
             </svg>
             laatste aanvraag
           </span>
-
           <span className="flex gap-1 bg-blue-100 text-primary-700 px-2 py-0.5 text-sm items-center rounded-full">
+            {/* ... (time icon) ... */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -197,7 +257,7 @@ function MultistepFormInfoSection({
                 d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
               />
             </svg>
-            12:34
+            {lastEntryTime}
           </span>
         </div>
 
@@ -212,14 +272,27 @@ function MultistepFormInfoSection({
                 }`}
               ></div>
             ))}
-            <p className="text-lg font-semibold ml-5">18</p>
+            {/* MODIFIED PART for today's count */}
+            <p className="text-lg font-semibold ml-5">{todayEntryCount}</p>
+            {/* END MODIFIED PART */}
           </div>
         </div>
 
         <div className="p-2 flex justify-between items-center">
           <p className="text-sm text-gray-500">zoveel mensen zijn u al voor</p>
-          <p className="font-semibold">15.874</p>
+          <p className="font-semibold">{totalEntryCount}</p>
         </div>
+
+        {fetchTimeError && (
+          <p className="text-red-500 text-xs p-2">
+            Failed to load time: {fetchTimeError}
+          </p>
+        )}
+        {fetchCountsError && (
+          <p className="text-red-500 text-xs p-2">
+            Failed to load counts: {fetchCountsError}
+          </p>
+        )}
       </div>
     </div>
   );

@@ -7,30 +7,17 @@ import TestimonialNotActive from "./TestimonialNotActive";
 import TestimonialSlider from "./TestimonialSlider";
 import TestimonialTrustPilot from "./TestimonialTrustPilot";
 
-// Example testimonial data (3 testimonials)
-const testimonialsData = [
-  {
-    id: 1,
-    text: "Na de eerste keer geweldig te zijn geholpen hoefden we niet te twijfelen wie voor ons de overwaarde mocht begeleiden. En het klopte de service is top en zeker voor iedereen aan te raden.",
-    name: "Tino Kooren",
-    date: "14-02-2025",
-    rating: 5,
-  },
-  {
-    id: 2,
-    text: "van begin tot het eind goed geholpen met snelle reacties op mijn vragen via mail, een goede uitleg over alles gekregen en het voelde allemaal heel vertrouwd.",
-    name: "Karolina Kool",
-    date: "18-04-2025",
-    rating: 4,
-  },
-  {
-    id: 3,
-    text: "mijn adviseur nam alle tijd en hielp mij met alle dingen die ik niet alleen voor elkaar kreeg hij is erg klant vriendelijk en dat helpt goed met zo een grote beslissing.",
-    name: "Tein Reiming",
-    date: "03-09-2024",
-    rating: 5,
-  },
-];
+// Helper function to format Strapi data into the structure your components expect
+const formatTestimonialData = (strapiData, idOffset = 0) => {
+  if (!strapiData) return null;
+  return {
+    id: strapiData.id || idOffset, // Use Strapi ID or an offset for uniqueness
+    text: strapiData.Text || "Default testimonial text.",
+    name: strapiData.Name || "Anonymous",
+    date: strapiData.Date || "Recent", // You might want to format the date from Strapi
+    rating: strapiData.Stars || 5, // Assuming 'Stars' is the field name for rating
+  };
+};
 
 // Animation timing constants (in ms)
 const ANIMATION_DURATION = {
@@ -50,20 +37,20 @@ const POSITION = {
 };
 
 // Simple mobile testimonial component
-function MobileTestimonials() {
+function MobileTestimonials({ testimonials }) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const nextTestimonial = () => {
-    setCurrentIndex((prev) => (prev + 1) % testimonialsData.length);
+    setCurrentIndex((prev) => (prev + 1) % testimonials.length);
   };
 
   const prevTestimonial = () => {
     setCurrentIndex(
-      (prev) => (prev - 1 + testimonialsData.length) % testimonialsData.length
+      (prev) => (prev - 1 + testimonials.length) % testimonials.length
     );
   };
 
-  const currentTestimonial = testimonialsData[currentIndex];
+  const currentTestimonial = testimonials[currentIndex];
 
   return (
     <>
@@ -105,7 +92,7 @@ function MobileTestimonials() {
             </button>
 
             <div className="flex space-x-2">
-              {testimonialsData.map((_, index) => (
+              {testimonials.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentIndex(index)}
@@ -180,7 +167,7 @@ function MobileTestimonials() {
   );
 }
 
-function DesktopTestimonials() {
+function DesktopTestimonials({ testimonials }) {
   // Track testimonials by their position
   const [testimonialPositions, setTestimonialPositions] = useState({
     [POSITION.ACTIVE]: 0,
@@ -201,6 +188,13 @@ function DesktopTestimonials() {
       animationTimers.current.forEach((timer) => clearTimeout(timer));
     };
   }, []);
+
+  if (!testimonials || testimonials.length < 3) {
+    console.warn(
+      "DesktopTestimonials requires at least 3 testimonials. Rendering mobile or a message"
+    );
+    return <MobileTestimonials testimonials={testimonials} />;
+  }
 
   const handleNext = () => {
     if (isAnimating) return;
@@ -279,59 +273,71 @@ function DesktopTestimonials() {
         <div className="w-[15rem] h-[15rem] bg-grey-100 p-6">
           <TestimonialTrustPilot />
         </div>
-
         <div className="relative w-[16rem] h-[18rem] items-center flex">
           {Object.entries(testimonialPositions).map(([position, index]) => {
-            if (index === null) return null;
+            if (index === null || index >= testimonials.length) return null; // Check index bounds
 
-            const data = testimonialsData[index];
+            const data = testimonials[index]; // Use the testimonials prop
+            if (!data) return null; // Extra safety if data for an index is missing
+
             const classes = getPositionClasses(position);
 
             return (
-              <div key={`${position}-${index}`} className={classes}>
+              <div key={`${position}-${data.id || index}`} className={classes}>
+                {" "}
+                {/* Use data.id for key */}
                 {position === POSITION.ACTIVE ||
                 position === POSITION.EXITING ? (
                   <TestimonialActive data={data} isEntering={false} />
                 ) : position === POSITION.ENTERING_ACTIVE ? (
                   <TestimonialActive data={data} isEntering={true} />
                 ) : (
-                  <div className="">
-                    <TestimonialNotActive data={data} />
-                  </div>
+                  <TestimonialNotActive data={data} />
                 )}
               </div>
             );
           })}
         </div>
-
         <div className="w-[15rem] h-[15rem] opacity-0">
+          {" "}
+          {/* Placeholder for layout */}
           <div className="p-9">
             <p>Placeholder</p>
           </div>
         </div>
       </div>
-
       <TestimonialSlider
         onNext={handleNext}
         activeIndex={testimonialPositions[POSITION.ACTIVE]}
-        total={testimonialsData.length}
+        total={testimonials.length} // Use length of the testimonials prop
         isAnimating={isAnimating}
       />
     </div>
   );
 }
 
-function Testimonials() {
+function Testimonials({
+  testimonial1Data,
+  testimonial2Data,
+  testimonial3Data,
+}) {
+  const allTestimonials = [
+    formatTestimonialData(testimonial1Data, 1),
+    formatTestimonialData(testimonial2Data, 2),
+    formatTestimonialData(testimonial3Data, 3),
+  ].filter(Boolean);
+
+  if (allTestimonials.length === 0) {
+    return <div className="text-center p-4">No testimonials to display.</div>;
+  }
+
   return (
     <>
-      {/* Show simple mobile version on small screens */}
       <div className="block md:hidden">
-        <MobileTestimonials />
+        <MobileTestimonials testimonials={allTestimonials} />
       </div>
-
-      {/* Show complex desktop version on medium screens and up */}
       <div className="hidden md:block">
-        <DesktopTestimonials />
+        <DesktopTestimonials testimonials={allTestimonials} />
       </div>
     </>
   );

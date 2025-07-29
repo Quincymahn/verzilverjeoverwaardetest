@@ -69,7 +69,7 @@ export default function Modal({
         {/* Modal Panel */}
         <div
           ref={modalRef}
-          className={`relative z-10 inline-block transform rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:align-middle ${sizeClasses[size]}`}
+          className={`relative z-10 inline-block transform rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:align-middle max-w-lg sm:min-w-4xl`}
         >
           <div className="bg-white  rounded-lg">
             <div className="flex items-start justify-between bg-linear-to-r rounded-tl-lg rounded-tr-lg from-primary-700 to bg-primary-800 px-4 pb-4 pt-5">

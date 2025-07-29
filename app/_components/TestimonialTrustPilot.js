@@ -1,6 +1,49 @@
+// Add "use client" at the top because we'll use hooks (useState, useEffect)
+"use client";
+
 import Image from "next/image";
+import { useEffect, useState } from "react"; // Import hooks
 
 function TestimonialTrustPilot() {
+  const [totalUsers, setTotalUsers] = useState("..."); // State for the total users count
+  const [fetchError, setFetchError] = useState(null); // State for any fetch error
+
+  useEffect(() => {
+    async function fetchTotalUsers() {
+      try {
+        const response = await fetch("/api/entry-count"); // Same API endpoint
+        if (!response.ok) {
+          const errorData = await response
+            .json()
+            .catch(() => ({ error: "Unknown error fetching user count" }));
+          throw new Error(
+            errorData.details ||
+              errorData.error ||
+              `HTTP error! status: ${response.status}`
+          );
+        }
+        const data = await response.json();
+
+        if (typeof data.totalCount !== "undefined") {
+          // Format the number if it's large, e.g., using Intl.NumberFormat
+          setTotalUsers(new Intl.NumberFormat("nl-NL").format(data.totalCount));
+        } else {
+          setTotalUsers("N/A");
+          console.warn(
+            "totalCount not found in API response for TestimonialTrustPilot"
+          );
+        }
+        setFetchError(null);
+      } catch (error) {
+        console.error("Error fetching total users for Testimonial:", error);
+        setTotalUsers("Error"); // Display "Error" or keep "..."
+        setFetchError(error.message || "Failed to load user count.");
+      }
+    }
+
+    fetchTotalUsers();
+  }, []); // Empty dependency array means this runs once on component mount
+
   return (
     <div className="flex flex-col items-center ">
       <div className="flex items-end gap-1 mb-2">
@@ -14,11 +57,6 @@ function TestimonialTrustPilot() {
         <p className="text-xl font-bold">Trustpilot</p>
       </div>
       <div className="flex gap-[2px] mb-1">
-        {/* <span className=" px-1.5 bg-green-600 text-white text-xl">★</span>
-        <span className=" px-1.5 bg-green-600 text-white text-xl">★</span>
-        <span className=" px-1.5 bg-green-600 text-white text-xl">★</span>
-        <span className=" px-1.5 bg-green-600 text-white text-xl">★</span>
-        <span className=" px-1.5 bg-gray-300 text-white text-xl">★</span> */}
         <Image
           src="/img/trustpilotwhite.png"
           width={100}
@@ -63,10 +101,21 @@ function TestimonialTrustPilot() {
         <p className="font-semibold underline">127 reviews</p>
       </div>
       <div className="text-center">
-        <p className="text-sm mb-3">Deze klanten zijn u voor gegaan</p>
+        {/* MODIFIED PART */}
+        <p className="text-sm mb-3">
+          Zoveel klanten zijn u al voor gegaan:{" "}
+          <span className="underline font-semibold">{totalUsers}</span>
+        </p>
+        {/* END MODIFIED PART */}
+        {fetchError && (
+          <p className="text-red-500 text-xs mt-1">
+            {/* Optionally display a simpler error message to the user */}
+            Kon aantal klanten niet laden.
+          </p>
+        )}
         <a
           className="bg-accent-50 rounded-full py-1.5 duration-300 px-4 text-white font-semibold hover:shadow-md hover:shadow-gray-400 hover:-translate-y-1 inline-block"
-          href="#"
+          href="#" // Consider making this a dynamic link or Next.js <Link>
         >
           Vul het formulier in
         </a>

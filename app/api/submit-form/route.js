@@ -3,26 +3,6 @@ import { google } from "googleapis";
 import mysql from "mysql2/promise";
 import { NextResponse } from "next/server";
 
-// --- Log environment variables ONCE at startup for verification (remove sensitive ones after check) ---
-console.log("DB_HOST:", process.env.DB_HOST);
-console.log("DB_USER:", process.env.DB_USER);
-console.log("DB_PASSWORD IS SET:", !!process.env.DB_PASSWORD); // Don't log actual password
-console.log("DB_NAME:", process.env.DB_NAME);
-console.log(
-  "GOOGLE_CLIENT_EMAIL:",
-  process.env.GOOGLE_CLIENT_EMAIL ? "SET" : "NOT SET"
-);
-console.log("GOOGLE_PRIVATE_KEY IS SET:", !!process.env.GOOGLE_PRIVATE_KEY);
-console.log(
-  "GOOGLE_SHEET_ID:",
-  process.env.GOOGLE_SHEET_ID ? "SET" : "NOT SET"
-);
-console.log(
-  "RECAPTCHA_V3_SECRET_KEY IS SET:",
-  !!process.env.RECAPTCHA_V3_SECRET_KEY
-);
-// --- End of initial environment variable logging ---
-
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -47,6 +27,44 @@ export async function OPTIONS() {
   });
 }
 
+// Helper function to format Dutch phone numbers for Google Sheets
+function formatPhoneNumberForSheets(phoneNumber) {
+  if (!phoneNumber || typeof phoneNumber !== "string") {
+    return phoneNumber; // Return as is if not a string or empty
+  }
+
+  // 1. Initial Cleaning: Remove all non-digit characters except for a leading '+'
+  let cleanedNumber = phoneNumber.trim(); // Remove leading/trailing whitespace
+
+  // If it starts with '+', keep the '+' and remove all non-digits from the rest
+  if (cleanedNumber.startsWith("+")) {
+    cleanedNumber = "+" + cleanedNumber.substring(1).replace(/\D/g, "");
+  } else {
+    // If no leading '+', just remove all non-digits
+    cleanedNumber = cleanedNumber.replace(/\D/g, "");
+  }
+
+  // 2. Apply Dutch-specific formatting / standardization
+  if (cleanedNumber.startsWith("06")) {
+    // If it starts with '06', assume Dutch mobile and prepend '+31'
+    return "+316" + cleanedNumber.substring(2);
+  }
+  // If it starts with '0' (but not '06'), assume it's another Dutch domestic number
+  // e.g., 020-1234567 becomes +31201234567
+  else if (cleanedNumber.startsWith("0") && cleanedNumber.length > 1) {
+    return "+31" + cleanedNumber.substring(1);
+  }
+  // If it already starts with '+31', it's likely already in a good international format
+  else if (cleanedNumber.startsWith("+31")) {
+    return cleanedNumber; // Already cleaned and standardized
+  }
+
+  // 3. Fallback: If no specific Dutch pattern matches, return the already cleaned number.
+  // This handles international numbers not starting with +31, or other formats,
+  // ensuring they are still cleaned of spaces and extraneous characters.
+  return cleanedNumber;
+}
+
 export async function POST(request) {
   const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -60,12 +78,8 @@ export async function POST(request) {
     const body = await request.json();
     const { recaptchaToken, ...formData } = body;
 
-    console.log("Received full body:", body);
-    console.log("Received formData:", formData); // CRITICAL: Check if 'remainingMortgage' is here and correctly named
-
-    // ... (reCAPTCHA logic remains the same) ...
+    // reCAPTCHA verification
     if (!process.env.RECAPTCHA_V3_SECRET_KEY) {
-      console.error("Missing RECAPTCHA_V3_SECRET_KEY in environment variables");
       return NextResponse.json(
         {
           success: false,
@@ -74,7 +88,7 @@ export async function POST(request) {
         { status: 500, headers: corsHeaders }
       );
     }
-    // ... rest of reCAPTCHA ...
+
     if (!recaptchaToken) {
       return NextResponse.json(
         {
@@ -84,6 +98,7 @@ export async function POST(request) {
         { status: 400, headers: corsHeaders }
       );
     }
+
     const verificationResponse = await fetch(
       `https://www.google.com/recaptcha/api/siteverify`,
       {
@@ -95,13 +110,8 @@ export async function POST(request) {
       }
     );
     const verificationData = await verificationResponse.json();
-    console.log("reCAPTCHA verification data:", verificationData);
 
     if (!verificationData.success) {
-      console.error(
-        "reCAPTCHA verification failed (success:false):",
-        verificationData["error-codes"]
-      );
       return NextResponse.json(
         {
           success: false,
@@ -112,7 +122,6 @@ export async function POST(request) {
       );
     }
     if (verificationData.score < RECAPTCHA_SCORE_THRESHOLD) {
-      console.warn(`reCAPTCHA score too low: ${verificationData.score}`);
       return NextResponse.json(
         {
           success: false,
@@ -123,9 +132,6 @@ export async function POST(request) {
       );
     }
     if (verificationData.action !== EXPECTED_RECAPTCHA_ACTION) {
-      console.warn(
-        `reCAPTCHA action mismatch. Expected: ${EXPECTED_RECAPTCHA_ACTION}, Got: ${verificationData.action}`
-      );
       return NextResponse.json(
         { success: false, message: "reCAPTCHA action mismatch." },
         { status: 400, headers: corsHeaders }
@@ -135,23 +141,21 @@ export async function POST(request) {
     const results = { mysql: null, sheets: null, errors: [] };
     let databaseId = null;
 
+    // Database save attempt
     try {
       const mysqlResult = await saveToDatabase(formData);
       databaseId = mysqlResult.insertId;
       results.mysql = { success: true, insertId: databaseId };
-      console.log("Successfully saved to MySQL with ID:", databaseId);
     } catch (error) {
-      console.error("MySQL save failed in POST handler:", error.message); // Log the specific error message
       results.errors.push(`MySQL: ${error.message}`);
       results.mysql = { success: false, error: error.message };
     }
 
+    // Google Sheets save attempt
     try {
-      const sheetsResult = await appendToSheet(formData, databaseId); // Pass original formData and potentially null ID
+      const sheetsResult = await appendToSheet(formData, databaseId);
       results.sheets = { success: true, data: sheetsResult };
-      console.log("Successfully saved to Google Sheets");
     } catch (error) {
-      console.error("Google Sheets save failed:", error.message);
       results.errors.push(`Google Sheets: ${error.message}`);
       results.sheets = { success: false, error: error.message };
     }
@@ -172,14 +176,14 @@ export async function POST(request) {
     } else if (mysqlSuccess || sheetsSuccess) {
       return NextResponse.json(
         {
-          success: true, // Or false if you consider partial failure an overall failure
+          success: true,
           message: `Data partially submitted. ${
             mysqlSuccess ? "Database: OK" : "Database: Failed"
           }, ${sheetsSuccess ? "Sheets: OK" : "Sheets: Failed"}`,
           results,
-          warnings: results.errors, // Changed from 'errors' to 'warnings' for partial success
+          warnings: results.errors,
         },
-        { status: 207, headers: corsHeaders } // 207 Multi-Status might be more appropriate
+        { status: 207, headers: corsHeaders }
       );
     } else {
       return NextResponse.json(
@@ -192,7 +196,6 @@ export async function POST(request) {
       );
     }
   } catch (error) {
-    console.error("General submission error in POST handler:", error);
     return NextResponse.json(
       {
         success: false,
@@ -204,36 +207,20 @@ export async function POST(request) {
   }
 }
 
-async function saveToDatabase(formData) {
+async function saveToDatabase(formData, formType = "Overwaarde Opnemen") {
   let connection;
-  let query = ""; // Define here for logging in catch
-  let values = []; // Define here for logging in catch
 
   try {
     connection = await pool.getConnection();
-    console.log("Successfully connected to MySQL.");
 
+    // Create Amsterdam time properly for MySQL
     const now = new Date();
-    const combinedNotes = [
-      formData.purpose ? `Doel: ${formData.purpose}` : "",
-      formData.equityToWithdraw
-        ? `Overwaarde: ${formData.equityToWithdraw}`
-        : "",
-      formData.comments ? `Opmerkingen: ${formData.comments}` : "",
-    ]
-      .filter(Boolean)
-      .join(" | ");
+    const amsterdamTime = new Date(
+      now.toLocaleString("en-US", {
+        timeZone: "Europe/Amsterdam",
+      })
+    );
 
-    query = `
-      INSERT INTO form_submissions (
-        type_lead, lead_bron, first_name, last_name, phone_number, email,
-        house_number, postal_code, market_value, remaining_mortgage,
-        income_source, yearly_income, has_partner, partner_income,
-        combined_notes, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    // Helper to parse float or return null
     const parseFloatOrNull = (val) => {
       if (val !== undefined && val !== null && val !== "") {
         const num = parseFloat(val);
@@ -242,55 +229,101 @@ async function saveToDatabase(formData) {
       return null;
     };
 
-    values = [
-      "Overwaarde opnemen",
-      "Verzilverjeoverwaarde.nl",
-      formData.firstName || "",
-      formData.lastName || "",
-      formData.phoneNumber || "",
-      formData.email || "",
-      formData.houseNumber || "",
-      formData.postalCode || "",
-      parseFloatOrNull(formData.marketValue),
-      parseFloatOrNull(formData.remainingMortgage), // CRITICAL: Ensure formData.remainingMortgage has the correct value
-      formData.incomeSource || "",
-      parseFloatOrNull(formData.yearlyIncome),
-      formData.hasPartner ? 1 : 0,
-      formData.hasPartner ? parseFloatOrNull(formData.partnerIncome) : null,
-      combinedNotes,
-      now,
-    ];
+    const columnMappings = {
+      datetime: amsterdamTime, // Now using Amsterdam time instead of server time
+      form_name: formType,
+      reden_aanvraag: formData.purpose,
+      waarde_woning: parseFloatOrNull(formData.marketValue),
+      hypotheeksom: parseFloatOrNull(formData.remainingMortgage),
+      bron_van_inkomen: formData.incomeSource,
+      jaar_inkomen: parseFloatOrNull(formData.yearlyIncome),
+      radio_partner:
+        formData.hasPartner === "ja" || formData.hasPartner === true
+          ? "ja"
+          : "nee",
+      inkomen_partner:
+        formData.hasPartner === "ja" || formData.hasPartner === true
+          ? parseFloatOrNull(formData.partnerIncome)
+          : null,
+      voornaam: formData.firstName,
+      achternaam: formData.lastName,
+      postcode: formData.postalCode,
+      straat: formData.street,
+      huisnummer: formData.houseNumber,
+      telefoonnummer: formData.phoneNumber,
+      email: formData.email,
+      overwaarde_opnemen: parseFloatOrNull(formData.equityToWithdraw),
+      overwaarde_reden: formData.purpose,
+      plaats: formData.city,
+      geboortedatum: formData.birthDate,
+      tussenvoegsel: formData.middleName,
+      radio_geslacht: formData.gender,
+      woning_gevonden: formData.houseFound,
+      oversluiten_reden: formData.refinanceReason,
+      situation: formData.situation,
+      income: parseFloatOrNull(formData.income),
+      inkomen: parseFloatOrNull(formData.inkomen),
+      financiering: parseFloatOrNull(formData.financing),
+      doel_aanvraag: formData.applicationGoal,
+      waarde_pand: parseFloatOrNull(formData.propertyValue),
+      inbreng_eigen_geld: parseFloatOrNull(formData.ownContribution),
+      type_pand: formData.propertyType,
+      fase_aankoop: formData.purchasePhase,
+      financieren_vanuit: formData.financeFrom,
+      waarde_vastgoedportefeuille: parseFloatOrNull(formData.portfolioValue),
+      aantal_verhuurde_panden: formData.rentalProperties,
+      huurinkomen: parseFloatOrNull(formData.rentalIncome),
+      bedrag: parseFloatOrNull(formData.amount),
+    };
 
-    console.log("Executing SQL Query:", query);
-    console.log("With Values:", values);
+    // Create combined notes
+    const notesParts = [
+      formData.purpose ? `Doel: ${formData.purpose}` : "",
+      formData.equityToWithdraw
+        ? `Overwaarde: ${formData.equityToWithdraw}`
+        : "",
+      formData.comments ? `Opmerkingen: ${formData.comments}` : "",
+      formData.additionalInfo ? `Extra info: ${formData.additionalInfo}` : "",
+    ].filter(Boolean);
 
-    const [result] = await connection.execute(query, values);
+    if (notesParts.length > 0) {
+      columnMappings.opmerking = notesParts.join(" | ");
+    }
 
-    console.log("MySQL Insert Result:", result);
+    // Filter out null/undefined values and build query
+    const validColumns = [];
+    const validValues = [];
+    const placeholders = [];
+
+    Object.entries(columnMappings).forEach(([column, value]) => {
+      if (value !== null && value !== undefined && value !== "") {
+        validColumns.push(column);
+        validValues.push(value);
+        placeholders.push("?");
+      }
+    });
+
+    if (validColumns.length === 0) {
+      throw new Error("No valid data to insert");
+    }
+
+    const query = `INSERT INTO subscribers (${validColumns.join(
+      ", "
+    )}) VALUES (${placeholders.join(", ")})`;
+
+    const [result] = await connection.execute(query, validValues);
+
     if (result.affectedRows > 0) {
-      console.log("Data inserted successfully to MySQL, ID:", result.insertId);
-      return result; // Contains insertId
+      return result;
     } else {
-      throw new Error("MySQL insert affected 0 rows.");
+      throw new Error("MySQL insert affected 0 rows - no data was inserted");
     }
   } catch (error) {
-    console.error("-----------------------------------------");
-    console.error("DATABASE ERROR in saveToDatabase function:");
-    console.error("Error Message:", error.message);
-    console.error("Error Code:", error.code); // MySQL error code (e.g., ER_NO_SUCH_TABLE)
-    console.error("Error Number:", error.errno);
-    console.error("SQL State:", error.sqlState);
-    if (query) console.error("Failed SQL Query:", query);
-    if (values.length > 0) console.error("Values for Failed Query:", values);
-    console.error("Full Error Stack:", error.stack);
-    console.error("-----------------------------------------");
-    // Re-throw a more specific error or the original one
     throw new Error(
       `MySQL Save Failed: ${error.message} (Code: ${error.code || "N/A"})`
     );
   } finally {
     if (connection) {
-      console.log("Releasing MySQL connection.");
       connection.release();
     }
   }
@@ -308,10 +341,21 @@ async function appendToSheet(formData, databaseId = null) {
 
     const sheets = google.sheets({ version: "v4", auth });
     const now = new Date();
-    const currentDateTime = `${now.toISOString().split("T")[0]} ${now
-      .getHours()
+
+    // Convert to Amsterdam timezone for the spreadsheet
+    // This handles both CET (UTC+1) and CEST (UTC+2) automatically
+    const amsterdamTime = new Date(
+      now.toLocaleString("en-US", {
+        timeZone: "Europe/Amsterdam",
+      })
+    );
+
+    const currentDateTime = `${
+      amsterdamTime.toISOString().split("T")[0]
+    } ${amsterdamTime.getHours().toString().padStart(2, "0")}:${amsterdamTime
+      .getMinutes()
       .toString()
-      .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+      .padStart(2, "0")}`;
 
     const combinedNotes = [
       formData.purpose ? `Doel: ${formData.purpose}` : "",
@@ -323,20 +367,34 @@ async function appendToSheet(formData, databaseId = null) {
       .filter(Boolean)
       .join(" | ");
 
+    let combinedAddress = "";
+    const street = formData.street || "";
+    const houseNumber = formData.houseNumber || "";
+
+    if (street && houseNumber) {
+      combinedAddress = `${street} ${houseNumber}`;
+    } else if (street) {
+      combinedAddress = street;
+    } else if (houseNumber) {
+      combinedAddress = houseNumber;
+    }
+
     const fieldToColumnMapping = {
       typeLead: { column: 0, value: "Overwaarde opnemen" },
       leadBron: { column: 1, value: "Verzilverjeoverwaarde.nl" },
-      databaseId: {
-        column: 2,
-        value: databaseId !== null ? databaseId : "N/A DB ID",
-      }, // Handle null DB ID
+      dbId: { column: 2, value: databaseId !== null ? String(databaseId) : "" },
+      currentDateTime: { column: 29, value: currentDateTime },
       firstName: { column: 4, field: "firstName" },
       lastName: { column: 6, field: "lastName" },
-      phoneNumber: { column: 7, field: "phoneNumber" },
+      phoneNumber: {
+        column: 7,
+        field: "phoneNumber",
+        transform: (val) => formatPhoneNumberForSheets(val),
+      },
       email: { column: 8, field: "email" },
-      houseNumber: { column: 9, field: "houseNumber" },
+      city: { column: 11, field: "city" },
       postalCode: { column: 10, field: "postalCode" },
-      remainingMortgage: { column: 13, field: "remainingMortgage" },
+      streetAndCity: { column: 9, value: combinedAddress },
       marketValue: { column: 14, field: "marketValue" },
       incomeSource: { column: 16, field: "incomeSource" },
       yearlyIncome: { column: 17, field: "yearlyIncome" },
@@ -351,8 +409,8 @@ async function appendToSheet(formData, databaseId = null) {
         condition: () => formData.hasPartner,
         default: "",
       },
+      remainingMortgage: { column: 13, field: "remainingMortgage" },
       combinedNotes: { column: 28, value: combinedNotes },
-      currentDateTime: { column: 29, value: currentDateTime },
     };
 
     const maxColumnIndex = Math.max(
@@ -360,30 +418,30 @@ async function appendToSheet(formData, databaseId = null) {
     );
     const rowArray = Array(maxColumnIndex + 1).fill("");
 
-    Object.entries(fieldToColumnMapping).forEach(([_, mappingConfig]) => {
-      let valueToInsert = "";
-      if ("value" in mappingConfig) {
-        valueToInsert = mappingConfig.value;
-      } else if ("field" in mappingConfig) {
-        const shouldApply =
-          !mappingConfig.condition || mappingConfig.condition();
-        if (shouldApply) {
-          const rawValue = formData[mappingConfig.field];
-          if (mappingConfig.transform && rawValue !== undefined) {
-            valueToInsert = mappingConfig.transform(rawValue);
+    Object.entries(fieldToColumnMapping).forEach(
+      ([fieldKey, mappingConfig]) => {
+        let valueToInsert = "";
+        if ("value" in mappingConfig) {
+          valueToInsert = mappingConfig.value;
+        } else if ("field" in mappingConfig) {
+          const shouldApply =
+            !mappingConfig.condition || mappingConfig.condition();
+          if (shouldApply) {
+            const rawValue = formData[mappingConfig.field];
+            if (mappingConfig.transform && rawValue !== undefined) {
+              valueToInsert = mappingConfig.transform(rawValue);
+            } else {
+              valueToInsert =
+                rawValue !== undefined && rawValue !== null ? rawValue : "";
+            }
           } else {
             valueToInsert =
-              rawValue !== undefined && rawValue !== null ? rawValue : "";
+              mappingConfig.default !== undefined ? mappingConfig.default : "";
           }
-        } else {
-          valueToInsert =
-            mappingConfig.default !== undefined ? mappingConfig.default : "";
         }
+        rowArray[mappingConfig.column] = valueToInsert;
       }
-      rowArray[mappingConfig.column] = valueToInsert;
-    });
-
-    console.log("Row to be appended to sheet:", rowArray);
+    );
 
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId: process.env.GOOGLE_SHEET_ID,
@@ -391,16 +449,9 @@ async function appendToSheet(formData, databaseId = null) {
       valueInputOption: "USER_ENTERED",
       resource: { values: [rowArray] },
     });
+
     return response.data;
   } catch (error) {
-    console.error("-----------------------------------------");
-    console.error("GOOGLE SHEETS API ERROR in appendToSheet function:");
-    console.error("Error Message:", error.message);
-    if (error.response && error.response.data && error.response.data.error) {
-      console.error("Google API Error Details:", error.response.data.error);
-    }
-    console.error("Full Error Stack:", error.stack);
-    console.error("-----------------------------------------");
     throw new Error(`Google Sheets Save Failed: ${error.message}`);
   }
 }

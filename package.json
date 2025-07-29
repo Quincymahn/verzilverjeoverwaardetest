@@ -11,6 +11,8 @@
   "dependencies": {
     "@headlessui/react": "^2.2.2",
     "@heroicons/react": "^2.2.0",
+    "date-fns": "^4.1.0",
+    "date-fns-tz": "^3.2.0",
     "googleapis": "^148.0.0",
     "mysql2": "^3.14.1",
     "next": "15.2.1",

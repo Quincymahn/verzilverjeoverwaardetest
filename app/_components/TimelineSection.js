@@ -1,23 +1,23 @@
-// TimelineSection.jsx
+// ./_components/TimelineSection.jsx
 "use client";
 
 import { useState } from "react";
 import {
-  ChevronRightIcon,
   UserGroupIcon,
   CurrencyEuroIcon,
   DeviceTabletIcon,
 } from "@heroicons/react/24/outline";
 
-const TimelineSection = () => {
+const TimelineSection = ({ slideOneData, slideTwoData, slideThreeData }) => {
   const [hoveredItem, setHoveredItem] = useState(null);
 
   const timelineItems = [
     {
       step: 1,
-      badge: "Vrijblijvend advies",
-      title: "Gratis Online Consultatie",
+      badge: slideOneData?.Tag || "Vrijblijvend advies",
+      title: slideOneData?.Heading || "Gratis Online Advies",
       description:
+        slideOneData?.Text || // Added optional chaining
         "Begin met een gratis online consultatie waarin we jouw financiële situatie en doelen bespreken. Onze experts luisteren naar jouw wensen en bieden persoonlijk advies zonder verplichtingen.",
       icon: <UserGroupIcon className="w-7 h-7 text-blue-600" />,
       badgeColor: "bg-sky-100 text-sky-800",
@@ -25,9 +25,10 @@ const TimelineSection = () => {
     },
     {
       step: 2,
-      badge: "Altijd de laagste rente",
-      title: "De Beste Hypotheekoplossing",
+      badge: slideTwoData?.Tag || "Altijd de laagste rente",
+      title: slideTwoData?.Heading || "De Beste Hypotheekoplossing",
       description:
+        slideTwoData?.Text || // Added optional chaining
         "We verschaffen inzicht in verschillende hypotheekopties en helpen je de beste keuze te maken. Als onafhankelijke adviseur kunnen wij altijd de laagste rente voor jouw situatie vinden.",
       icon: <CurrencyEuroIcon className="w-7 h-7 text-blue-600" />,
       badgeColor: "bg-blue-100 text-blue-800",
@@ -35,9 +36,10 @@ const TimelineSection = () => {
     },
     {
       step: 3,
-      badge: "Volledig online advies",
-      title: "Persoonlijke Begeleiding",
+      badge: slideThreeData?.Tag || "Volledig online advies",
+      title: slideThreeData?.Heading || "Persoonlijke Begeleiding",
       description:
+        slideThreeData?.Text || // Added optional chaining
         "Op basis van jouw informatie bieden we persoonlijk hypotheekadvies en begeleiden we je bij elke stap van het hypotheekproces. Alles volledig online en transparant, zonder verrassingen.",
       icon: <DeviceTabletIcon className="w-7 h-7 text-blue-600" />,
       badgeColor: "bg-indigo-100 text-indigo-800",
@@ -61,10 +63,7 @@ const TimelineSection = () => {
           </div>
 
           <div className="relative mt-0 xl:mt-20">
-            {/* Timeline line */}
             <div className="hidden md:block absolute h-full w-1 bg-gradient-to-b from-blue-500 to-blue-600 left-1/2 transform -translate-x-1/2 rounded-full"></div>
-
-            {/* Timeline items */}
             <div className="space-y-10 xl:space-y-20">
               {timelineItems.map((item, index) => (
                 <div
@@ -75,30 +74,23 @@ const TimelineSection = () => {
                   onMouseEnter={() => setHoveredItem(item.step)}
                   onMouseLeave={() => setHoveredItem(null)}
                 >
-                  {/* Step number */}
                   <div className="hidden md:flex absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-10 z-10">
                     <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm">
                       {item.step}
                     </div>
                   </div>
-
-                  {/* Timeline icon */}
                   <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 z-10">
                     <div
                       className={`flex items-center justify-center w-14 h-14 rounded-full ${item.iconBg} border-4 border-blue-500 shadow-md`}
                     >
-                      {item.icon}
+                      {item.icon} {/* Renders the static Heroicon */}
                     </div>
                   </div>
-
-                  {/* Mobile view icon */}
                   <div className="md:hidden absolute left-0 top-0">
                     <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white font-semibold text-sm">
                       {item.step}
                     </div>
                   </div>
-
-                  {/* Content */}
                   <div
                     className={`${
                       index % 2 === 0 ? "md:pr-16" : "md:pl-16"
@@ -112,26 +104,15 @@ const TimelineSection = () => {
                           : "transition-all duration-300"
                       }`}
                     >
-                      {/* Badge */}
-
                       <h3 className="text-xl font-bold text-blue-800 mb-4">
                         {item.title}
                       </h3>
-
                       <p className="text-gray-600 mb-6">{item.description}</p>
                       <span
                         className={`inline-block px-3 py-1 text-sm font-medium rounded-full mb-4 ${item.badgeColor}`}
                       >
                         {item.badge}
                       </span>
-
-                      {/* <a
-                        href="#"
-                        className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-medium rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                      >
-                        Vul het formulier in
-                        <ChevronRightIcon className="w-5 h-5 ml-2" />
-                      </a> */}
                     </div>
                   </div>
                 </div>
@@ -141,8 +122,8 @@ const TimelineSection = () => {
         </div>
       </section>
       <div className=" bg-[#e3f2fd] w-full p-15 xl:p-30 relative overflow-hidden">
-        <div className="bg-[#ebf6fe] h-50 w-60 xl:h-80 xl:w-90 rounded-full absolute -top-20 -left-30 - xl:-top-30 xl:-left-40"></div>
-        <div className="bg-[#ebf6fe] h-50 w-60 xl:h-80 xl:w-90 rounded-full absolute -bottom-20 -right-30 - xl:-bottom-30 xl:-right-40"></div>
+        <div className="bg-[#ebf6fe] h-50 w-60 xl:h-80 xl:w-90 rounded-full absolute -top-20 -left-30 xl:-top-30 xl:-left-40"></div>
+        <div className="bg-[#ebf6fe] h-50 w-60 xl:h-80 xl:w-90 rounded-full absolute -bottom-20 -right-30 xl:-bottom-30 xl:-right-40"></div>
         <h2 className="text-2xl z-10 relative font-semibold text-center">
           Persoonlijk advies
         </h2>
@@ -153,7 +134,7 @@ const TimelineSection = () => {
         </p>
         <div className="flex justify-center z-10 relative">
           <a
-            href="#"
+            href="#" // Link to a relevant section or page
             className="text-white mt-4 justify-center text-sm py-3 px-7 rounded-full bg-primary-700 transition-all duration-300 inline-flex gap-2 items-center hover:-translate-y-1 hover:shadow-md hover:shadow-gray-400"
           >
             Afspraak maken

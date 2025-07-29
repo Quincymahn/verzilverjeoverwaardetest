@@ -19,13 +19,15 @@ function MultiStepThankYou({ resetForm }) {
     setCurrentTime(`Vandaag, ${timeString}`);
   }, []);
 
+  const phoneNumber = "0854015280"; // Store phone number for easy use
+  const emailAddress = "info@verzilverjeoverwaarde.nl"; // Store email for easy use
+
   return (
     <div>
       <div className=" py-4">
         <h2 className="text-xl text-center text-primary-700 font-bold mb-3">
           Bedankt voor uw vertrouwen
         </h2>
-        {/* <CheckCircleIcon className="w-16 h-16 text-green-600 mb-4" /> */}
         <p className=" text-gray-700 text-center mb-6">
           Uw hypotheekaanvraag is succesvol bij ons aangekomen. Wij gaan direct
           voor u aan de slag met het vinden van de meest geschikte hypotheek
@@ -79,13 +81,6 @@ function MultiStepThankYou({ resetForm }) {
             </div>
           </div>
         </div>
-        {/* <button
-            type="button"
-            onClick={resetForm}
-            className="bg-accent-50 text-lg font-semibold text-white py-1 px-6 rounded-full"
-          >
-            Nieuwe aanvraag
-          </button> */}
       </div>
 
       <div className="text-center mt-10">
@@ -93,11 +88,21 @@ function MultiStepThankYou({ resetForm }) {
         <p className="mb-4 text-gray-500">
           We staan altijd voor je klaar. Neem gerust contact op!
         </p>
-        <div className="flex gap-3 justify-center mb-6">
-          <div className="bg-primary-700 inline-flex gap-2 items-center transition duration-300 py-2 px-4 rounded-full text-white font-semibold hover:-translate-y-1 hover:shadow-gray-400 hover:shadow-md">
+        <div className="flex flex-col lg:flex-row gap-3 justify-center mb-6">
+          <a
+            href={`tel:${phoneNumber.replace(/\s/g, "")}`}
+            className="bg-primary-700 inline-flex gap-2 items-center transition duration-300 py-2 px-4 rounded-full text-white font-semibold hover:-translate-y-1 hover:shadow-gray-400 hover:shadow-md cursor-pointer"
+          >
             <PhoneArrowUpRightIcon className="w-4 h-4" />
-            Bel Direct: 085 401 5280
-          </div>
+            Bel Direct: {phoneNumber}
+          </a>
+          <a
+            href={`mailto:${emailAddress}`}
+            className="gap-2 inline-flex items-center border border-primary-700 transition duration-300 py-2 px-4 rounded-full text-primary-700 font-semibold hover:-translate-y-1 hover:shadow-gray-400 hover:shadow-md cursor-pointer"
+          >
+            <EnvelopeIcon className="w-5 h-5" />
+            {emailAddress}
+          </a>
         </div>
         <p className="text-sm text-gray-500">
           <span className="font-semibold text-black">Geen verplichting: </span>
