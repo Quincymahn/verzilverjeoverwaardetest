@@ -5,8 +5,6 @@ import { ArrowLongRightIcon } from "@heroicons/react/24/solid";
 import Image from "next/image";
 import { useForm, FormProvider } from "react-hook-form";
 import MultiStepProgressbar from "./MultiStepProgressbar";
-// MultiStepOne is not used in your provided code, so I've commented it out. Uncomment if needed.
-// import MultiStepOne from "./MultiStepOne";
 import MultiStepTwo from "./MultiStepTwo";
 import MultiStepThree from "./MultiStepThree";
 import MultiStepFour from "./MultiStepFour";
@@ -16,19 +14,14 @@ import {
   useGoogleReCaptcha,
 } from "react-google-recaptcha-v3";
 
-function MyMultiStepFormContent(
-  {
-    // These props are no longer needed for form state, but can be kept if they
-    // are used for other UI elements outside this form. For this component's
-    // logic, they are now redundant.
-    // marketValue,
-    // remainingMortgage,
-    // equityToWithdraw,
-    // setMarketValue,
-    // setRemainingMortgage,
-    // setEquityToWithdraw,
-  }
-) {
+function MyMultiStepFormContent({
+  marketValue,
+  remainingMortgage,
+  equityToWithdraw,
+  setMarketValue,
+  setRemainingMortgage,
+  setEquityToWithdraw,
+}) {
   const [step, setStep] = useState(1);
   const [isChangingStep, setIsChangingStep] = useState(false);
   const [fadeState, setFadeState] = useState("fade-in");
@@ -60,29 +53,49 @@ function MyMultiStepFormContent(
     };
   }, [overlayActive]);
 
-  // Setup React Hook Form - This is now the single source of truth.
   const methods = useForm({
+    // Step 2: Initialize the form with the props from Main
     defaultValues: {
-      marketValue: 500000,
-      remainingMortgage: 300000,
-      equityToWithdraw: 30000,
+      marketValue,
+      remainingMortgage,
+      equityToWithdraw,
       purpose: "",
       incomeSource: "",
       yearlyIncome: 30000,
-      hasPartner: "nee", // Using a string for radio button consistency
+      hasPartner: "nee",
       partnerIncome: 30000,
+      partnerBirthDate: "",
+      gender: "",
       firstName: "",
       lastName: "",
       email: "",
       phoneNumber: "",
+      birthDate: "",
       postalCode: "",
       houseNumber: "",
+      houseNumberAddition: "",
       street: "",
       city: "",
       comments: "",
     },
     mode: "onBlur",
   });
+
+  const { watch } = methods;
+
+  // Step 3: Add this useEffect to watch for form changes and update the parent state
+  useEffect(() => {
+    const subscription = watch((value, { name }) => {
+      if (name === "marketValue") {
+        setMarketValue(value.marketValue);
+      } else if (name === "remainingMortgage") {
+        setRemainingMortgage(value.remainingMortgage);
+      } else if (name === "equityToWithdraw") {
+        setEquityToWithdraw(value.equityToWithdraw);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, setMarketValue, setRemainingMortgage, setEquityToWithdraw]);
 
   const getButtonText = useCallback((stepNumber) => {
     switch (stepNumber) {
@@ -284,6 +297,7 @@ function MyMultiStepFormContent(
       ];
       if (methods.watch("hasPartner") === "ja") {
         fieldsToValidate.push("partnerIncome");
+        fieldsToValidate.push("partnerBirthDate");
       }
     }
 

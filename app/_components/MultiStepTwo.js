@@ -133,7 +133,7 @@ const MultiStepTwo = ({ onFirstInteraction, onFieldInteraction }) => {
             onChange={handleEquityToWithdrawChange}
             step="1000"
             onBlur={() => onFieldInteraction?.("equityToWithdraw_input")}
-            className=" w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
+            className="w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none transition-all duration-300"
           />
         </div>
       </div>

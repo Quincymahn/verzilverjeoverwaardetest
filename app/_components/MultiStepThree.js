@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useFormContext } from "react-hook-form";
 import ThousandSeparator from "./ThousandSeparator";
 
@@ -24,6 +24,7 @@ const MultiStepThree = ({ onFieldInteraction, onAddressLoadingChange }) => {
 
   const watchedPostcode = watch("postalCode");
   const watchedHouseNumber = watch("houseNumber");
+  const watchedHouseNumberAddition = watch("houseNumberAddition"); // Nieuwe watch voor toevoeging
   const watchedStreet = watch("street"); // Watch street to decide when to show the fields
 
   useEffect(() => {
@@ -41,56 +42,66 @@ const MultiStepThree = ({ onFieldInteraction, onAddressLoadingChange }) => {
     onAddressLoadingChange?.(isLoading);
   }, [isLoading, onAddressLoadingChange]);
 
-  const fetchAddressData = async (postcode, housenumber) => {
-    if (!postcode || !housenumber) return;
+  const fetchAddressData = useCallback(
+    async (postcode, housenumber, houseNumberAddition = "") => {
+      if (!postcode || !housenumber) return;
 
-    setIsLoading(true);
-    setDisplayError("");
-    clearErrorsRHF(["street", "city"]);
+      setIsLoading(true);
+      setDisplayError("");
+      clearErrorsRHF(["street", "city"]);
 
-    try {
-      const response = await fetch("/api/postcode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      try {
+        const requestBody = {
           postcode: postcode.trim(),
           housenumber: housenumber.trim(),
-        }),
-      });
+        };
 
-      if (!response.ok) {
-        let errorMessage = `Adres niet gevonden. Controleer uw invoer.`;
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-        } catch (e) {
-          /* Fallback */
+        // Voeg houseNumberAddition toe als deze bestaat
+        if (houseNumberAddition && houseNumberAddition.trim() !== "") {
+          requestBody.houseNumberAddition = houseNumberAddition.trim();
         }
-        throw new Error(errorMessage);
-      }
 
-      const data = await response.json();
-      if (data.street && data.city) {
-        setValue("street", data.street, { shouldValidate: true });
-        setValue("city", data.city, { shouldValidate: true });
-        setShowAddressFields(true);
-      } else {
+        const response = await fetch("/api/postcode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+          let errorMessage = `Adres niet gevonden. Controleer uw invoer.`;
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch (e) {
+            /* Fallback */
+          }
+          throw new Error(errorMessage);
+        }
+
+        const data = await response.json();
+        if (data.street && data.city) {
+          setValue("street", data.street, { shouldValidate: true });
+          setValue("city", data.city, { shouldValidate: true });
+          setShowAddressFields(true);
+        } else {
+          setValue("street", "", { shouldValidate: true });
+          setValue("city", "", { shouldValidate: true });
+          setDisplayError(
+            "Adresgegevens onvolledig. Controleer postcode/huisnummer."
+          );
+          setShowAddressFields(false);
+        }
+      } catch (err) {
+        setDisplayError(err.message || "Kon adresgegevens niet ophalen.");
         setValue("street", "", { shouldValidate: true });
         setValue("city", "", { shouldValidate: true });
-        setDisplayError(
-          "Adresgegevens onvolledig. Controleer postcode/huisnummer."
-        );
         setShowAddressFields(false);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      setDisplayError(err.message || "Kon adresgegevens niet ophalen.");
-      setValue("street", "", { shouldValidate: true });
-      setValue("city", "", { shouldValidate: true });
-      setShowAddressFields(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [clearErrorsRHF, setValue]
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -100,9 +111,12 @@ const MultiStepThree = ({ onFieldInteraction, onAddressLoadingChange }) => {
         watchedHouseNumber &&
         postcodeRegex.test(watchedPostcode.trim())
       ) {
-        fetchAddressData(watchedPostcode, watchedHouseNumber);
+        fetchAddressData(
+          watchedPostcode,
+          watchedHouseNumber,
+          watchedHouseNumberAddition
+        );
       } else if (watchedPostcode || watchedHouseNumber) {
-        // Clear fields if inputs are partial or invalid, but don't show an error yet
         setValue("street", "", { shouldValidate: true });
         setValue("city", "", { shouldValidate: true });
         setShowAddressFields(false);
@@ -111,7 +125,13 @@ const MultiStepThree = ({ onFieldInteraction, onAddressLoadingChange }) => {
     }, 800);
 
     return () => clearTimeout(timer);
-  }, [watchedPostcode, watchedHouseNumber]);
+  }, [
+    watchedPostcode,
+    watchedHouseNumber,
+    watchedHouseNumberAddition,
+    fetchAddressData,
+    setValue,
+  ]);
 
   const updateYearlyIncome = (newValue) =>
     setValue("yearlyIncome", parseInt(newValue) || 0);
@@ -187,7 +207,7 @@ const MultiStepThree = ({ onFieldInteraction, onAddressLoadingChange }) => {
         {/* Wat is uw adres? */}
         <p className="mb-3 xl:mt-4">Wat is uw adres?</p>
         <div className="w-full flex flex-col mb-1">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <div className="col-span-2">
               <input
                 type="text"
@@ -225,6 +245,24 @@ const MultiStepThree = ({ onFieldInteraction, onAddressLoadingChange }) => {
               {errors.houseNumber && (
                 <span className="text-red-500 text-sm mt-1">
                   {errors.houseNumber.message}
+                </span>
+              )}
+            </div>
+            <div>
+              <input
+                type="text"
+                placeholder="Toev."
+                className={`w-full py-2 px-4 bg-gray-50 rounded-md border-b-3 ${
+                  errors.houseNumberAddition
+                    ? "border-b-red-500"
+                    : "border-b-gray-200"
+                } focus:border-b-3 focus:border-b-blue-500 border border-gray-200 focus:outline-none transition-all duration-300`}
+                {...register("houseNumberAddition")}
+                onBlur={() => onFieldInteraction?.("houseNumberAddition")}
+              />
+              {errors.houseNumberAddition && (
+                <span className="text-red-500 text-sm mt-1">
+                  {errors.houseNumberAddition.message}
                 </span>
               )}
             </div>
@@ -288,7 +326,7 @@ const MultiStepThree = ({ onFieldInteraction, onAddressLoadingChange }) => {
           )}
         </div>
 
-        {/* Wat is uw bruto jaar inkomen? */}
+        {/* Rest of the component remains the same */}
         <p className="mb-2 xl:mt-4">Wat is uw bruto jaar inkomen?</p>
         <div className="w-full flex flex-col items-end gap-4 ml-auto mb-4">
           <input
@@ -311,7 +349,6 @@ const MultiStepThree = ({ onFieldInteraction, onAddressLoadingChange }) => {
           />
         </div>
 
-        {/* Heeft u een partner? */}
         <p className="mb-2 xl:mt-4">Heeft u een partner?</p>
         <div className="flex flex-col mb-4">
           <div className="flex gap-4">
@@ -378,6 +415,34 @@ const MultiStepThree = ({ onFieldInteraction, onAddressLoadingChange }) => {
                 onBlur={() => onFieldInteraction?.("partnerIncome_input_blur")}
                 className="w-[40%] ml-right text-right bg-gray-50 p-1 rounded-md border-b-3 border-b-gray-200 border border-gray-200 focus:border-b-3 focus:border-b-blue-500 focus:outline-none"
               />
+            </div>
+            <p className="mb-2 xl:mt-4">Geboortedatum partner</p>
+            <div className="w-full flex flex-col mb-4">
+              <input
+                type="text"
+                placeholder="dd-mm-jjjj"
+                className={`py-2 px-4 w-full bg-gray-50 rounded-md border-b-3 ${
+                  errors.partnerBirthDate
+                    ? "border-b-red-500"
+                    : "border-b-gray-200"
+                } focus:border-b-3 focus:border-b-blue-500 border border-gray-200 focus:outline-none transition-all duration-300`}
+                {...register("partnerBirthDate", {
+                  required:
+                    hasPartner === "ja"
+                      ? "Geboortedatum partner is verplicht"
+                      : false,
+                  pattern: {
+                    value: /^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[012])-\d{4}$/,
+                    message: "Ongeldige datum. Gebruik dd-mm-jjjj.",
+                  },
+                })}
+                onBlur={() => onFieldInteraction?.("partnerBirthDate")}
+              />
+              {errors.partnerBirthDate && (
+                <span className="text-red-500 text-sm mt-1">
+                  {errors.partnerBirthDate.message}
+                </span>
+              )}
             </div>
           </>
         )}

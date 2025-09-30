@@ -30,10 +30,20 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
-.env*
-docker-compose.yml
-dockerfile
+# env files (ignore all .env variants)
+.env
+.env.*
+
+# docker-compose files (ignore all variants)
+docker-compose*.yml
+docker-compose*.yaml
+
+# dockerfiles (ignore all variants)
+Dockerfile*
+dockerfile*
+
+# next.js config
+next.config.mjs
 
 # vercel
 .vercel

@@ -251,13 +251,17 @@ async function saveToDatabase(formData, formType = "Overwaarde Opnemen") {
       straat: formData.street,
       huisnummer: formData.houseNumber,
       telefoonnummer: formData.phoneNumber,
+      geboortedatum: formData.birthDate,
+      geboortedatum_partner:
+        formData.hasPartner === "ja" ? formData.partnerBirthDate : null,
       email: formData.email,
       overwaarde_opnemen: parseFloatOrNull(formData.equityToWithdraw),
       overwaarde_reden: formData.purpose,
       plaats: formData.city,
-      geboortedatum: formData.birthDate,
       tussenvoegsel: formData.middleName,
-      radio_geslacht: formData.gender,
+      // ========= TOEGEVOEGD =========
+      radio_geslacht: formData.gender, // Sla de aanhef op in de database
+      // ============================
       woning_gevonden: formData.houseFound,
       oversluiten_reden: formData.refinanceReason,
       situation: formData.situation,
@@ -343,7 +347,6 @@ async function appendToSheet(formData, databaseId = null) {
     const now = new Date();
 
     // Convert to Amsterdam timezone for the spreadsheet
-    // This handles both CET (UTC+1) and CEST (UTC+2) automatically
     const amsterdamTime = new Date(
       now.toLocaleString("en-US", {
         timeZone: "Europe/Amsterdam",
@@ -370,9 +373,9 @@ async function appendToSheet(formData, databaseId = null) {
     let combinedAddress = "";
     const street = formData.street || "";
     const houseNumber = formData.houseNumber || "";
-
-    if (street && houseNumber) {
-      combinedAddress = `${street} ${houseNumber}`;
+    const houseNumberAddition = formData.houseNumberAddition || "";
+    if (street && houseNumber && houseNumberAddition) {
+      combinedAddress = `${street} ${houseNumber}${houseNumberAddition}`;
     } else if (street) {
       combinedAddress = street;
     } else if (houseNumber) {
@@ -382,7 +385,8 @@ async function appendToSheet(formData, databaseId = null) {
     const fieldToColumnMapping = {
       typeLead: { column: 0, value: "Overwaarde opnemen" },
       leadBron: { column: 1, value: "Verzilverjeoverwaarde.nl" },
-      dbId: { column: 2, value: databaseId !== null ? String(databaseId) : "" },
+      dbId: { column: 2, value: databaseId !== null ? String(databaseId) : "" }, // Opgeschoven naar kolom 4
+      gender: { column: 3, field: "gender" }, // Aanhef in kolom 3 (index 2)
       currentDateTime: { column: 29, value: currentDateTime },
       firstName: { column: 4, field: "firstName" },
       lastName: { column: 6, field: "lastName" },
@@ -396,12 +400,19 @@ async function appendToSheet(formData, databaseId = null) {
       postalCode: { column: 10, field: "postalCode" },
       streetAndCity: { column: 9, value: combinedAddress },
       marketValue: { column: 14, field: "marketValue" },
+      birthDate: { column: 15, field: "birthDate" },
       incomeSource: { column: 16, field: "incomeSource" },
       yearlyIncome: { column: 17, field: "yearlyIncome" },
       hasPartner: {
         column: 20,
         field: "hasPartner",
         transform: (val) => (val ? "Ja" : "Nee"),
+      },
+      partnerBirthDate: {
+        column: 21,
+        field: "partnerBirthDate",
+        condition: () => formData.hasPartner,
+        default: "",
       },
       partnerIncome: {
         column: 22,
