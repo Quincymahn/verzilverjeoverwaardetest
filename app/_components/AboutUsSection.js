@@ -14,7 +14,8 @@ function AboutUsSection({ aboutUsComponent }) {
     imageMediaObject?.data?.attributes?.alternativeText ||
     "Over ons sectie afbeelding"; // Fallback alt
 
-  const finalImageUrl = imageUrl || "/img/default-team-photo.jpg";
+  const finalImageUrl =
+    imageUrl || "/img/kateryna-hliznitsova-vwaW6X3MHKA-unsplash.jpg";
 
   // Optional: Log the received prop and processed values
   // console.log("AboutUsSection - aboutUsImage prop:", JSON.stringify(aboutUsImage, null, 2));
@@ -22,9 +23,9 @@ function AboutUsSection({ aboutUsComponent }) {
 
   return (
     <section className="py-12 mt-5 xl:mt-30 sm:py-16 lg:py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
-          <div className="w-full lg:w-1/2 order-2 lg:order-1">
+      <div className="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="flex flex-col items-center gap-8 lg:flex-row lg:gap-12">
+          <div className="order-2 w-full lg:w-1/2 lg:order-1">
             <div className="relative aspect-[4/3] sm:aspect-[16/10] lg:aspect-square rounded-lg overflow-hidden shadow-lg">
               {finalImageUrl ? (
                 <Image
@@ -40,18 +41,18 @@ function AboutUsSection({ aboutUsComponent }) {
                   }
                 />
               ) : (
-                <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500">
+                <div className="flex items-center justify-center w-full h-full text-gray-500 bg-gray-300">
                   Afbeelding niet beschikbaar
                 </div>
               )}
             </div>
           </div>
 
-          <div className="w-full lg:w-1/2 order-1 lg:order-2 text-center lg:text-left">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 sm:mb-6">
+          <div className="order-1 w-full text-center lg:w-1/2 lg:order-2 lg:text-left">
+            <h2 className="mb-4 text-2xl font-bold text-gray-900 sm:text-3xl lg:text-4xl sm:mb-6">
               Verzilverjeoverwaarde {/* This heading could also be dynamic */}
             </h2>
-            <div className="space-y-4 sm:space-y-6 text-gray-700 text-sm sm:text-base leading-relaxed">
+            <div className="space-y-4 text-sm leading-relaxed text-gray-700 sm:space-y-6 sm:text-base">
               {textContent ? (
                 textContent
                   .split("\n")

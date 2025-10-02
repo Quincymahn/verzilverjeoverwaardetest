@@ -374,8 +374,12 @@ async function appendToSheet(formData, databaseId = null) {
     const street = formData.street || "";
     const houseNumber = formData.houseNumber || "";
     const houseNumberAddition = formData.houseNumberAddition || "";
-    if (street && houseNumber && houseNumberAddition) {
-      combinedAddress = `${street} ${houseNumber}${houseNumberAddition}`;
+
+    if (street && houseNumber) {
+      // Als er zowel straat als huisnummer is
+      combinedAddress = houseNumberAddition
+        ? `${street} ${houseNumber}${houseNumberAddition}`
+        : `${street} ${houseNumber}`;
     } else if (street) {
       combinedAddress = street;
     } else if (houseNumber) {
